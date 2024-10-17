@@ -35,6 +35,7 @@ plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)  # Main 
 plt.minorticks_on()  # Minor ticks
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)  # Minor grid
 plt.show()
+#plt.savefig("acceleration smoothed.pdf", format="pdf")
 
 # 4. Detect peaks in the smoothed acceleration data
 # Define threshold and minimum distance to filter out noise
@@ -59,6 +60,7 @@ plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 plt.show()
+#plt.savefig("Detected Peaks in Smoothed Acceleration Data.pdf", format="pdf")
 
 # 7. Estimate damped natural frequency using the cleaned peaks
 peak_times = time[filtered_peaks]
@@ -93,14 +95,16 @@ plt.figure(figsize=(8, 6))
 
 # Magnitude plot
 plt.subplot(2, 1, 1)
-plt.semilogx(frequency, 20 * np.log10(mag), color='b')  # Magnitude in dB
+plt.plot(frequency, 20 * np.log10(mag), color='b')  # Magnitude in dB
 plt.title(r'Bode Diagram', fontsize=16)
 plt.ylabel(r'Magnitude [dB]', fontsize=14)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
+plt.minorticks_on()
+plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 
 # Phase plot
 plt.subplot(2, 1, 2)
-plt.semilogx(frequency, phase, color='r')  # Phase in degrees
+plt.plot(frequency, phase, color='r')  # Phase in degrees
 plt.xlabel(r'Frequency [Hz]', fontsize=14)
 plt.ylabel(r'Phase [degrees]', fontsize=14)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
@@ -108,6 +112,7 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 
 plt.show()
+#plt.savefig("Bode Diagram.pdf", format="pdf")
 
 # 11. Nyquist plot
 plt.figure(figsize=(8, 6))
@@ -118,6 +123,7 @@ plt.ylabel(r'Imaginary Part', fontsize=14)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.axis('equal')  # Ensure orthonormal plot
 plt.show()
+#plt.savefig("Bode Diagram.pdf", format="pdf")
 
 # 12. Compute damping ratio using half-power method from FRF
 half_power_points = np.where(20 * np.log10(mag) >= np.max(20 * np.log10(mag)) - 3)[0]
