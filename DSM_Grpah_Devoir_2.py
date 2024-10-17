@@ -39,7 +39,7 @@ plt.show()
 
 # 4. Detect peaks in the smoothed acceleration data
 # Define threshold and minimum distance to filter out noise
-peak_threshold = 0.005  # Adjust based on your data (can be set as a fraction of the max value)
+peak_threshold = 0.0025  # Adjust based on your data (can be set as a fraction of the max value)
 min_distance = 20  # Adjust this based on your time resolution and expected peak spacing
 
 # Detect all peaks
@@ -65,19 +65,26 @@ plt.show()
 # 7. Estimate damped natural frequency using the cleaned peaks
 peak_times = time[filtered_peaks]
 T = np.mean(np.diff(peak_times))  # Average period between peaks
+"""
+comme on a epsilon <<1 (a verif apres) donc  w_0=w_d (+-)
+"""
 f_damped = 1 / T  # Damped natural frequency
 
-# 8. Estimate damping ratio using logarithmic decrement
-# Only work with valid, positive acceleration peaks
-valid_peaks = acceleration_smooth[filtered_peaks] > 0
-log_decrements = np.log(acceleration_smooth[filtered_peaks[:-1]][valid_peaks[:-1]] / acceleration_smooth[filtered_peaks[1:]][valid_peaks[1:]])
 
-# Ensure only finite values (no NaN, Inf)
-log_decrements = log_decrements[np.isfinite(log_decrements)]
-zeta = np.mean(log_decrements) / (2 * np.pi)
+# 8. Calculate the damping ratio using log method
+if len(filtered_peaks) >= 2:  # Ensure there are at least two peaks
+    a_1 = acceleration_smooth[filtered_peaks[0]]  # Amplitude of the first peak
+    a_Nk = acceleration_smooth[filtered_peaks[-1]]  # Amplitude of the last peak
 
-print(f'Damped Natural Frequency: {f_damped} Hz')
-print(f'Damping Ratio: {zeta}')
+    k = len(filtered_peaks) - 1  # Number of periods between the first and last peak
+    zeta = np.log(a_1 / a_Nk) / (k * 2 * np.pi)  # Calculate damping ratio using the new formula
+
+    print(f'Damped Natural Frequency: {f_damped} Hz')
+    print(f'Damping Ratio: {zeta}')
+else:
+    print("Not enough peaks detected to compute the damping ratio.")
+
+
 
 # 9. Load FRF data (3 columns: frequency, real part of FRF, imaginary part of FRF)
 frf_data = np.loadtxt('P2024_frf_acc.txt', delimiter='\t')
