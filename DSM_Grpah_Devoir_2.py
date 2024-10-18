@@ -52,6 +52,7 @@ filtered_peaks = peaks[time[peaks] > 0.02]
 plt.figure(figsize=(8, 6))
 plt.plot(time, acceleration_smooth, label='Smoothed Data', color='b')
 plt.plot(time[filtered_peaks], acceleration_smooth[filtered_peaks], 'rx', label='Detected Peaks (t > 0.02s)')
+plt.axvline(x=0.02, color='green', linestyle='--', linewidth=1, label=r'$t = 0.02 \, \text{s}$')  # Ligne verticale verte pointillée
 plt.title(r'Detected Peaks in Smoothed Acceleration Data (After $t > 0.02$)', fontsize=16)
 plt.xlabel(r'Time $t$ [s]', fontsize=14)
 plt.ylabel(r'Acceleration $a(t)$ [m/s²]', fontsize=14)
@@ -60,6 +61,7 @@ plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 plt.show()
+
 #plt.savefig("Detected Peaks in Smoothed Acceleration Data.pdf", format="pdf")
 
 # 7. Estimate damped natural frequency using the cleaned peaks
@@ -94,9 +96,17 @@ Im_FRF = frf_data[:, 2]
 FRF = Re_FRF + 1j * Im_FRF
 
 # 10. Bode plot
+# Calcul de la magnitude et de la phase
 mag = np.abs(FRF)
-mag[mag == 0] = 1e-12  # Replace zero magnitudes with a small value to avoid log10(0)
 phase = np.angle(FRF, deg=True)
+
+# Filtrer les valeurs de magnitude égales à zéro
+non_zero_indices = mag > 0  # Créer un masque booléen où les valeurs de mag sont strictement positives
+
+# Appliquer ce masque pour filtrer les valeurs de mag et phase
+mag = mag[non_zero_indices]  # Garde seulement les valeurs non nulles de mag
+phase = phase[non_zero_indices]  # Filtrer également la phase correspondante
+frequency = frequency[non_zero_indices]
 
 plt.figure(figsize=(8, 6))
 
@@ -132,13 +142,75 @@ plt.axis('equal')  # Ensure orthonormal plot
 plt.show()
 #plt.savefig("Bode Diagram.pdf", format="pdf")
 
-# 12. Compute damping ratio using half-power method from FRF
-half_power_points = np.where(20 * np.log10(mag) >= np.max(20 * np.log10(mag)) - 3)[0]
-f_natural = frequency[np.argmax(mag)]  # Frequency at the peak
-bandwidth = frequency[half_power_points[-1]] - frequency[half_power_points[0]]
-zeta_half_power = bandwidth / (2 * f_natural)
-
-print(f'Natural Frequency from Bode Plot: {f_natural} Hz')
-print(f'Damping Ratio from Half-Power Method: {zeta_half_power}')
 
 
+# 10. Half-power method - improved based on Q-factor
+max_magnitude = np.max(mag)
+half_power_level = max_magnitude / np.sqrt(2)
+
+# Find the frequencies at half-power points
+half_power_points = np.where(mag >= half_power_level)[0]
+f1 = frequency[half_power_points[0]]  # First half-power point
+f2 = frequency[half_power_points[-1]]  # Second half-power point
+
+# Convert frequencies to angular frequencies (omega)
+omega1 = 2 * np.pi * f1
+omega2 = 2 * np.pi * f2
+omega_natural = 2 * np.pi * frequency[np.argmax(mag)]  # Angular frequency at peak
+
+# Calculate delta omega (width between half-power points)
+delta_omega = omega2 - omega1
+
+# Calculate the Q factor and damping ratio zeta
+Q = omega_natural / delta_omega
+zeta = 1 / (2 * Q)
+
+print(f'Natural Frequency (f_natural from Bode diag.): {frequency[np.argmax(mag)]} Hz')
+print(f'Q-factor: {Q}')
+print(f'Damping Ratio (zeta) with bode diagram: {zeta}')
+
+# 11. Print the phase at the natural frequency
+phase_at_natural = phase[np.argmax(mag)]
+print(f'Phase at Natural Frequency: {phase_at_natural} degrees')
+
+
+
+
+
+# Valeur donnée de M_eq
+M_eq = 87.5
+
+# 1. Load FRF data (3 columns: frequency, real part of FRF, imaginary part of FRF)
+frf_data = np.loadtxt('P2024_frf_acc.txt', delimiter='\t')
+Re_FRF = frf_data[:, 1]  # Real part of FRF
+Im_FRF = frf_data[:, 2]  # Imaginary part of FRF
+
+# 2. Trouver les indices où Re_FRF = 0
+mask_real_zero = np.abs(np.real(FRF)) < 1e-1  # Condition pour Re(FRF) ≈ 0
+
+# 4. Extraire la partie imaginaire correspondante
+y_values = np.imag(FRF[mask_real_zero])
+
+# 5. Sélectionner la plus grande valeur de y (Im(FRF))
+if len(y_values) > 0:
+    y_max = np.max(y_values)  # Choisir la valeur maximale de Im(FRF)
+    
+    # 6. Calculer le damping ratio (epsilon)
+    epsilon = 1 / (2 * y_max * M_eq)
+    
+    print(f"Max y (Im_FRF) at Re_FRF=0: {y_max}")
+    print(f"Damping ratio (epsilon): {epsilon}")
+else:
+    print("No valid y value found where Re_FRF=0.")
+
+# 7. Tracer le diagramme de Nyquist avec la ligne verticale en x = 0
+plt.figure(figsize=(8, 6))
+plt.plot(Re_FRF, Im_FRF, color='b')
+plt.axvline(x=0, color='green', linestyle='--', linewidth=1, label=r'$Re = 0$')  # Ligne verticale à x = 0
+plt.title(r'Nyquist Diagram', fontsize=16)
+plt.xlabel(r'Real Part', fontsize=14)
+plt.ylabel(r'Imaginary Part', fontsize=14)
+plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
+plt.axis('equal')  # Ensure orthonormal plot
+plt.legend()
+plt.show()
