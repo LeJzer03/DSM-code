@@ -161,9 +161,14 @@ omega_natural = 2 * np.pi * frequency[np.argmax(mag)]  # Angular frequency at pe
 # Calculate delta omega (width between half-power points)
 delta_omega = omega2 - omega1
 
-# Calculate the Q factor and damping ratio zeta
 Q = omega_natural / delta_omega
-zeta = 1 / (2 * Q)
+
+#zeta avec le systeme 2 eq a 2 inconnues 
+#on note w_a = max_magnitude
+zeta = np.sqrt(delta_omega**2/((4*(max_magnitude)**2)+delta_omega**2))
+
+# Calculate the Q factor and damping ratio zeta (assuptions Charles)
+#zeta = 1 / (2 * Q)
 
 print(f'Natural Frequency (f_natural from Bode diag.): {frequency[np.argmax(mag)]} Hz')
 print(f'Q-factor: {Q}')
