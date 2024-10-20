@@ -34,8 +34,9 @@ plt.legend(loc='best', fontsize=12)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)  # Main grid
 plt.minorticks_on()  # Minor ticks
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)  # Minor grid
+plt.savefig("acceleration smoothed.pdf", format="pdf")
 plt.show()
-#plt.savefig("acceleration smoothed.pdf", format="pdf")
+
 
 # 4. Detect peaks in the smoothed acceleration data
 # Define threshold and minimum distance to filter out noise
@@ -60,9 +61,10 @@ plt.legend(loc='best', fontsize=12)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+plt.savefig("Detected Peaks in Smoothed Acceleration Data.pdf", format="pdf")
 plt.show()
 
-#plt.savefig("Detected Peaks in Smoothed Acceleration Data.pdf", format="pdf")
+
 
 # 7. Estimate damped natural frequency using the cleaned peaks
 peak_times = time[filtered_peaks]
@@ -128,8 +130,8 @@ plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 
+plt.savefig("Bode Diagram.pdf", format="pdf")
 plt.show()
-#plt.savefig("Bode Diagram.pdf", format="pdf")
 
 
 # 10. Half-power method - improved based on Q-factor
@@ -210,4 +212,5 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 plt.axis('equal')  # Assure un repère orthonormé
 plt.legend()
+plt.savefig("Nyquist Diagram.pdf", format="pdf")
 plt.show()
