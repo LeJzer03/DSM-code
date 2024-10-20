@@ -81,8 +81,8 @@ if len(filtered_peaks) >= 2:  # Ensure there are at least two peaks
     k = len(filtered_peaks) - 1  # Number of periods between the first and last peak
     zeta = np.log(a_1 / a_Nk) / (k * 2 * np.pi)  # Calculate damping ratio using the new formula
 
-    print(f'Damped Natural Frequency: {f_damped} Hz')
-    print(f'Damping Ratio: {zeta}')
+    print(f'Damped Natural Frequency from time data: {f_damped} Hz')
+    print(f'Damping Ratio from time data: {zeta}')
 else:
     print("Not enough peaks detected to compute the damping ratio.")
 
@@ -131,18 +131,6 @@ plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=
 plt.show()
 #plt.savefig("Bode Diagram.pdf", format="pdf")
 
-# 11. Nyquist plot
-plt.figure(figsize=(8, 6))
-plt.plot(Re_FRF, Im_FRF, color='b')
-plt.title(r'Nyquist Diagram', fontsize=16)
-plt.xlabel(r'Real Part', fontsize=14)
-plt.ylabel(r'Imaginary Part', fontsize=14)
-plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
-plt.axis('equal')  # Ensure orthonormal plot
-plt.show()
-#plt.savefig("Bode Diagram.pdf", format="pdf")
-
-
 
 # 10. Half-power method - improved based on Q-factor
 max_magnitude = np.max(mag)
@@ -163,9 +151,10 @@ delta_omega = omega2 - omega1
 
 Q = omega_natural / delta_omega
 
+
 #zeta avec le systeme 2 eq a 2 inconnues 
-#on note w_a = max_magnitude
-zeta = np.sqrt(delta_omega**2/((4*(max_magnitude)**2)+delta_omega**2))
+#on note w_a = max_magnitude (pour la formule)
+zeta = np.sqrt(delta_omega**2/((4*(omega_natural)**2)+delta_omega**2))
 
 # Calculate the Q factor and damping ratio zeta (assuptions Charles)
 #zeta = 1 / (2 * Q)
@@ -180,8 +169,6 @@ print(f'Phase at Natural Frequency: {phase_at_natural} degrees')
 
 
 
-
-
 # Valeur donnée de M_eq
 M_eq = 87.5
 
@@ -191,31 +178,36 @@ Re_FRF = frf_data[:, 1]  # Real part of FRF
 Im_FRF = frf_data[:, 2]  # Imaginary part of FRF
 
 # 2. Trouver les indices où Re_FRF = 0
-mask_real_zero = np.abs(np.real(FRF)) < 1e-1  # Condition pour Re(FRF) ≈ 0
 
-# 4. Extraire la partie imaginaire correspondante
-y_values = np.imag(FRF[mask_real_zero])
+mask = np.logical_and(FRF.real >= -0.001, FRF.real <= 0.001)
+result = FRF[mask]
 
-# 5. Sélectionner la plus grande valeur de y (Im(FRF))
-if len(y_values) > 0:
-    y_max = np.max(y_values)  # Choisir la valeur maximale de Im(FRF)
+# 4. Sélectionner la plus grande valeur de la partie imaginaire
+if len(result) > 0:
+    max_imaginary = np.max(result.imag)  # La plus grande partie imaginaire
     
-    # 6. Calculer le damping ratio (epsilon)
-    epsilon = 1 / (2 * y_max * M_eq)
+    # 5. Calculer le damping ratio (epsilon)
+    epsilon = 1 / (2 * max_imaginary * M_eq)
     
-    print(f"Max y (Im_FRF) at Re_FRF=0: {y_max}")
-    print(f"Damping ratio (epsilon): {epsilon}")
+    print(f"Damping ratio with Nyquist diagram: {epsilon}")
 else:
     print("No valid y value found where Re_FRF=0.")
 
-# 7. Tracer le diagramme de Nyquist avec la ligne verticale en x = 0
+# 6. Tracer le diagramme de Nyquist avec une ligne verticale pointillée partielle
 plt.figure(figsize=(8, 6))
 plt.plot(Re_FRF, Im_FRF, color='b')
-plt.axvline(x=0, color='green', linestyle='--', linewidth=1, label=r'$Re = 0$')  # Ligne verticale à x = 0
+
+# Tracer la ligne verticale pointillée allant de (0, 0) à (0, max_imaginary)
+if len(result) > 0:
+    plt.plot([0, 0], [0, max_imaginary], color='red', linestyle='--', linewidth=1.5, label = r'$\frac{1}{2 \epsilon M_{\text{eq}}}$')
+
+# Ajouter le titre et les labels
 plt.title(r'Nyquist Diagram', fontsize=16)
 plt.xlabel(r'Real Part', fontsize=14)
 plt.ylabel(r'Imaginary Part', fontsize=14)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
-plt.axis('equal')  # Ensure orthonormal plot
+plt.minorticks_on()
+plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+plt.axis('equal')  # Assure un repère orthonormé
 plt.legend()
 plt.show()
