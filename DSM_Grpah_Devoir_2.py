@@ -34,7 +34,7 @@ plt.legend(loc='best', fontsize=12)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)  # Main grid
 plt.minorticks_on()  # Minor ticks
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)  # Minor grid
-plt.savefig("acceleration smoothed.pdf", format="pdf")
+#plt.savefig("acceleration smoothed.pdf", format="pdf")
 plt.show()
 
 
@@ -61,7 +61,7 @@ plt.legend(loc='best', fontsize=12)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
-plt.savefig("Detected Peaks in Smoothed Acceleration Data.pdf", format="pdf")
+#plt.savefig("Detected Peaks in Smoothed Acceleration Data.pdf", format="pdf")
 plt.show()
 
 
@@ -130,7 +130,7 @@ plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 
-plt.savefig("Bode Diagram.pdf", format="pdf")
+#plt.savefig("Bode Diagram.pdf", format="pdf")
 plt.show()
 
 
@@ -212,5 +212,5 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 plt.axis('equal')  # Assure un repère orthonormé
 plt.legend()
-plt.savefig("Nyquist Diagram.pdf", format="pdf")
+#plt.savefig("Nyquist Diagram.pdf", format="pdf")
 plt.show()
