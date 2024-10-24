@@ -176,28 +176,49 @@ phase_at_natural = phase[np.argmax(mag)]
 # Valeur donnée de M_eq
 M_eq = 87.5
 
-# 1. Load FRF data (3 columns: frequency, real part of FRF, imaginary part of FRF)
+# 1. Charger les données FRF (3 colonnes : fréquence, partie réelle du FRF, partie imaginaire du FRF)
 frf_data = np.loadtxt('P2024_frf_acc.txt', delimiter='\t')
-Re_FRF = frf_data[:, 1]  # Real part of FRF
-Im_FRF = frf_data[:, 2]  # Imaginary part of FRF
+frequency = frf_data[:, 0]  # Fréquence associée à chaque point du Nyquist
+Re_FRF = frf_data[:, 1]  # Partie réelle du FRF
+Im_FRF = frf_data[:, 2]  # Partie imaginaire du FRF
+FRF = Re_FRF + 1j * Im_FRF
 
-# 2. Trouver les indices où Re_FRF = 0
+# 2. Assurer que le masque boolean correspond bien à la taille des données FRF
+if len(FRF) != len(frequency):
+    raise ValueError("Les dimensions de FRF et frequency ne correspondent pas.")
 
+# 3. Trouver les indices où Re_FRF ≈ 0 (axe imaginaire)
 mask = np.logical_and(FRF.real >= -0.001, FRF.real <= 0.001)
-result = FRF[mask]
 
+# Vérifier que la taille du masque correspond bien à la taille des données
+if len(mask) != len(frequency):
+    raise ValueError("Les dimensions du masque et de frequency ne correspondent pas.")
+
+result = FRF[mask]
+frequencies_at_zero_real = frequency[mask]  # Fréquences correspondantes
+
+# 4. Sélectionner la plus grande valeur de la partie imaginaire et la fréquence associée
 if len(result) > 0:
-    max_imaginary = np.max(result.imag)  # La plus grande partie imaginaire du mask 
+    max_imaginary = np.max(result.imag)  # La plus grande partie imaginaire
+    index_max_imaginary = np.argmax(result.imag)  # L'indice de la partie imaginaire maximale
+    omega_a = 2 * np.pi * frequencies_at_zero_real[index_max_imaginary]  # Fréquence angulaire à résonance (w_a)
     
-    # 5. Calculer le damping ratio (epsilon)
+    # 5. Calculer le taux d'amortissement (epsilon)
     epsilon = 1 / (2 * max_imaginary * M_eq)
     
-    print(f"Damping ratio with Nyquist diagram: {epsilon}")
+    # 6. Corriger pour obtenir la fréquence naturelle w_0
+    if epsilon < 0.1:  # Faible amortissement
+        omega_0 = omega_a
+    else:
+        omega_0 = omega_a / np.sqrt(1 - 2 * epsilon**2)
+        f_0_ny = omega_0 /(2*np.pi)
+    
+    print(f"Taux d'amortissement (epsilon) avec Nyquist : {epsilon}")
+    print(f"Fréquence naturelle (f_0) avec Nyquist: {f_0_ny} Hz")
 else:
-    print("No valid y value found where Re_FRF=0.")
+    print("Aucune valeur valide trouvée pour Re_FRF = 0.")
 
-
-# 6. Tracer le diagramme de Nyquist avec une ligne verticale pointillée partielle
+# 7. Tracer le diagramme de Nyquist avec une ligne verticale pointillée partielle
 plt.figure(figsize=(8, 6))
 plt.plot(Re_FRF, Im_FRF, color='b')
 
@@ -214,18 +235,38 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 plt.axis('equal')  # Assurer un repère orthonormé
 plt.legend()
-#plt.savefig("Nyquist_Diagram.pdf", format="pdf")
 plt.show()
 
-"""
-#trouver la freqence naturelle f_0 avec Nyquist 
 
-imaginary_parts = FRF.imag
-max_im_index = np.argmax(imaginary_parts)
 
-real_part_of_max_imaginary = FRF[max_im_index].real
-print(f"La partie réelle correspondant à la plus grande partie imaginaire est : {real_part_of_max_imaginary}")
-"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
