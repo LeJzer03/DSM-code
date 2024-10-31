@@ -69,6 +69,7 @@ T = np.mean(np.diff(peak_times))  # Période moyenne entre les pics
 f_damped = 1 / T  # Fréquence naturelle amortie
 
 
+
 # 8. Calculer le taux d'amortissement en utilisant la méthode logarithmique
 if len(filtered_peaks) >= 2:  # Vérifier qu'il y a au moins deux pics
     a_1 = acceleration_smooth[filtered_peaks[0]]  # Amplitude du premier pic
@@ -81,6 +82,12 @@ if len(filtered_peaks) >= 2:  # Vérifier qu'il y a au moins deux pics
     print(f'Taux d\'amortissement à partir des données temporelles : {zeta}')
 else:
     print("Pas assez de pics détectés pour calculer le taux d'amortissement.")
+
+f_0_temp = f_damped / np.sqrt(1 - zeta**2)
+print(f'Fréquence naturelle tt court à partir des données temporelles : {f_0_temp} Hz')
+print(f'Pulsation naturelle tt court à partir des données temporelles : {f_0_temp*2*np.pi} Hz')
+
+
 
 
 # 9. Charger les données FRF (3 colonnes : fréquence, partie réelle du FRF, partie imaginaire du FRF)
@@ -131,19 +138,34 @@ plt.show()
 max_magnitude = np.max(mag)
 half_power_level = max_magnitude / np.sqrt(2)
 
+
+
+
+print(f'')
+
+
+
+print(f'half power value = {half_power_level}')
 # Trouver les fréquences aux points de demi-puissance
 half_power_points = np.where(mag >= half_power_level)[0]
 f1 = frequency[half_power_points[0]]  # Premier point de demi-puissance
 f2 = frequency[half_power_points[-1]]  # Deuxième point de demi-puissance
+print(f'f1 = {f1}')
+print(f'f2 = {f2}')
 
 # Convertir les fréquences en fréquences angulaires (omega)
 omega1 = 2 * np.pi * f1
 omega2 = 2 * np.pi * f2
+
+print(f'w1 = {omega1}')
+print(f'w2 = {omega2}')
 f_a = frequency[np.argmax(mag)]
 omega_a = 2 * np.pi * f_a  # Fréquence angulaire au pic
 
 # Calculer delta omega (largeur entre les points de demi-puissance)
 delta_omega = omega2 - omega1
+
+print(f'delta omega  = {delta_omega}')
 
 Q = omega_a / delta_omega
 
@@ -201,6 +223,8 @@ frequencies_at_zero_real = frequency[mask]  # Fréquences correspondantes
 if len(result) > 0:
     max_imaginary = np.max(result.imag)  # La plus grande partie imaginaire
     index_max_imaginary = np.argmax(result.imag)  # L'indice de la partie imaginaire maximale
+    f_a_last = frequencies_at_zero_real[index_max_imaginary]
+    print(f"f_a = {f_a_last} Hz")
     omega_a = 2 * np.pi * frequencies_at_zero_real[index_max_imaginary]  # Fréquence angulaire à résonance (w_a)
     
     # 5. Calculer le taux d'amortissement (epsilon)
@@ -236,7 +260,6 @@ plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=
 plt.axis('equal')  # Assurer un repère orthonormé
 plt.legend()
 plt.show()
-
 
 
 
