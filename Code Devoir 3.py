@@ -5,105 +5,135 @@ Created on Sat Nov  9 17:58:42 2024
 @author: colli
 """
 
+
+# Importation des bibliothèques nécessaires
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from scipy import signal
 
-# 1. Import des données
-def load_modal_data():
-    # Charger les données modales depuis les fichiers
-    frequencies_damping = np.loadtxt("P2024_f_eps_Part3.txt")
-    mode_shapes = np.loadtxt("P2024_modes_Part3.txt")
-    frf_data = np.loadtxt("P2024_frf_Part3_f_ds.txt")
-    return frequencies_damping, mode_shapes, frf_data
+# Données de base
+F0 = 450  # Force d'excitation en Newton
+omega = 436  # Fréquence d'excitation en rad/s
+L = 0.2  # Longueur d'onde en mètres (distance entre pavés)
 
-# 2. Génération du signal d'excitation
-def excitation_force(F0=450, omega=436, duration=0.15, sampling_rate=10000):
-    t = np.linspace(0, duration, int(duration * sampling_rate))
-    force = F0 * np.sin(omega * t)
-    return t, force
+# Paramètres temporels pour l'excitation
+time_interval = 0.15  # Intervalle de temps pour le tracé
+time_steps = np.linspace(0, time_interval, 1000)
+F_z = F0 * np.sin(omega * time_steps)
 
-# 3. Calcul de la matrice FRF (en utilisant les données modales)
-def calculate_frf(frequencies_damping, mode_shapes):
-    freqs = frequencies_damping[:, 0]  # Fréquences naturelles
-    damp_ratios = frequencies_damping[:, 1]  # Coefficients d'amortissement
-    num_points = mode_shapes.shape[0]
-    frf_matrix = np.zeros((num_points, num_points, len(freqs)), dtype=complex)
-    
-    for i, (freq, damp) in enumerate(zip(freqs, damp_ratios)):
-        omega_n = 2 * np.pi * freq
-        for j in range(num_points):
-            for k in range(num_points):
-                # Calcul de la FRF pour chaque mode et chaque point de mesure
-                frf_matrix[j, k, i] = mode_shapes[j, i] * mode_shapes[k, i] / \
-                    (omega_n**2 * (1 - (damp ** 2)))
-    return frf_matrix
+# Tracé de l'évolution temporelle de la force d'excitation
+plt.figure(figsize=(10, 5))
+plt.plot(time_steps, F_z, label="Force d'excitation Fz")
+plt.xlabel("Temps (s)")
+plt.ylabel("Force (N)")
+plt.title("Évolution temporelle de la force d'excitation")
+plt.grid(True)
+plt.legend()
+plt.show()
 
-# 4. Tracé des diagrammes de Bode et Nyquist
-def plot_bode_nyquist(frf_data):
-    freq = frf_data[:, 0]
-    re_frf = frf_data[:, 1]
-    im_frf = frf_data[:, 2]
-    frf_complex = re_frf + 1j * im_frf
-    
-    # Diagramme de Bode
-    plt.figure()
-    plt.semilogx(freq, 20 * np.log10(np.abs(frf_complex)))
-    plt.title("Diagramme de Bode")
-    plt.xlabel("Fréquence (Hz)")
-    plt.ylabel("Amplitude (dB)")
-    plt.grid()
+# Chargement des données modales et de la FRF
+# Remplacer les chemins par les fichiers fournis
+frequencies, damping_ratios = np.loadtxt("P2024_f_eps_Part3.txt", unpack=True)
+mode_shapes = np.loadtxt("P2024_modes_Part3.txt")
+frf_data = np.loadtxt("P2024_frf_Part3_f_ds.txt")
 
-    # Diagramme de Nyquist
-    plt.figure()
-    plt.plot(re_frf, im_frf)
-    plt.title("Diagramme de Nyquist")
-    plt.xlabel("Re(FRF)")
-    plt.ylabel("Im(FRF)")
-    plt.grid()
-    plt.show()
+# Construction de la matrice FRF (en termes d'accélération)
+mass_matrix = np.diag(frequencies**2)  # Masses normalisées
+damping_matrix = np.diag(2 * damping_ratios * frequencies)  # Amortissement
 
-# 5. Calcul et tracé de la réponse temporelle au niveau du siège du conducteur
-def time_response(t, force, frf_driver_seat):
-    # Convolution du signal d'excitation avec la FRF du siège du conducteur
-    response = np.convolve(force, frf_driver_seat, mode='same')
-    plt.plot(t, response)
-    plt.title("Réponse temporelle en accélération au siège du conducteur")
-    plt.xlabel("Temps (s)")
-    plt.ylabel("Accélération (m/s²)")
-    plt.grid()
-    plt.show()
-    return response
+# Tracé du diagramme de Bode (Amplitude en échelle semi-logarithmique)
+freq_range = np.linspace(0, 1500, 1000)
+FRF_amplitude = np.zeros_like(freq_range, dtype=float)
 
-# 6. Étude de l'effet de l'amortissement
-def damping_effect_analysis(frequencies_damping, mode_shapes, frf_data, speeds):
-    for speed in speeds:
-        # Conversion de la vitesse en fréquence d'excitation
-        omega = 436 * (speed / 50)
-        t, force = excitation_force(omega=omega)
-        
-        # Calcul de la réponse en fonction du nouveau coefficient d’amortissement
-        modified_damping = np.copy(frequencies_damping)
-        modified_damping[:, 1] = 0.02  # Imposer un amortissement de 2%
-        
-        frf_matrix = calculate_frf(modified_damping, mode_shapes)
-        frf_driver_seat = frf_data[:, 1] + 1j * frf_data[:, 2]  # Approximation pour la FRF du siège du conducteur
-        
-        response = time_response(t, force, frf_driver_seat)
-        plt.plot(speed, np.max(response), 'o', label=f'{speed} km/h')
-    
-    plt.title("Amplitude maximale de la réponse en fonction de la vitesse")
-    plt.xlabel("Vitesse (km/h)")
-    plt.ylabel("Amplitude maximale de la réponse (m/s²)")
-    plt.legend()
-    plt.grid()
-    plt.show()
+for i, freq in enumerate(freq_range):
+    frf_sum = 0
+    for mode in range(len(frequencies)):
+        frf_mode = F0 / np.sqrt((mass_matrix[mode, mode] - freq**2)**2 + (damping_matrix[mode, mode] * freq)**2)
+        frf_sum += frf_mode
+    FRF_amplitude[i] = frf_sum
 
-# Exécution des fonctions
-frequencies_damping, mode_shapes, frf_data = load_modal_data()
-t, force = excitation_force()
-frf_matrix = calculate_frf(frequencies_damping, mode_shapes)
-plot_bode_nyquist(frf_data)
-time_response(t, force, frf_data[:, 1])  # Hypothèse sur la FRF pour le siège du conducteur
-damping_effect_analysis(frequencies_damping, mode_shapes, frf_data, speeds=[50, 60, 70])
+plt.figure(figsize=(10, 5))
+plt.semilogy(freq_range, FRF_amplitude)
+plt.xlabel("Fréquence (Hz)")
+plt.ylabel("Amplitude FRF (m/s²/N)")
+plt.title("Diagramme de Bode en amplitude")
+plt.grid(True)
+plt.show()
+
+# Diagramme de Nyquist
+FRF_real = np.zeros_like(freq_range, dtype=float)
+FRF_imag = np.zeros_like(freq_range, dtype=float)
+
+for mode in range(len(frequencies)):
+    real_part = F0 * (frequencies[mode]**2 - freq_range**2) / \
+                ((frequencies[mode]**2 - freq_range**2)**2 + (2 * damping_ratios[mode] * frequencies[mode] * freq_range)**2)
+    imag_part = F0 * (2 * damping_ratios[mode] * frequencies[mode] * freq_range) / \
+                ((frequencies[mode]**2 - freq_range**2)**2 + (2 * damping_ratios[mode] * frequencies[mode] * freq_range)**2)
+    FRF_real += real_part
+    FRF_imag += imag_part
+
+plt.figure(figsize=(10, 5))
+plt.plot(FRF_real, FRF_imag, label="Nyquist")
+plt.xlabel("Partie réelle de FRF")
+plt.ylabel("Partie imaginaire de FRF")
+plt.title("Diagramme de Nyquist")
+plt.grid(True)
+plt.legend()
+plt.show()
+
+# Comparaison avec les données de FRF fournies
+plt.figure(figsize=(10, 5))
+plt.plot(frf_data[:, 0], frf_data[:, 1], label="FRF Réelle", color="red")
+plt.plot(freq_range, FRF_amplitude, label="FRF Calculée", linestyle="--")
+plt.xlabel("Fréquence (Hz)")
+plt.ylabel("FRF (m/s²/N)")
+plt.title("Comparaison des FRF (réelle vs calculée)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Calcul de l'amplitude maximale de la réponse pour chaque point de référence
+max_amplitudes = []
+for shape in mode_shapes.T:  # Chaque colonne correspond à un mode
+    response = np.abs(shape * F0)  # Réponse pour la force appliquée
+    max_amplitudes.append(response.max())
+
+# Tracé de l'évolution des amplitudes maximales
+points = np.arange(1, len(max_amplitudes) + 1)
+plt.figure(figsize=(10, 5))
+plt.plot(points, max_amplitudes, marker="o")
+plt.xlabel("Points de référence")
+plt.ylabel("Amplitude maximale de réponse (m/s²)")
+plt.title("Évolution des amplitudes maximales aux points de référence")
+plt.grid(True)
+plt.show()
+
+# Tracé de la réponse temporelle en accélération au siège du conducteur
+driver_response = np.fft.ifft(FRF_amplitude * np.sin(omega * time_steps))
+
+plt.figure(figsize=(10, 5))
+plt.plot(time_steps, np.real(driver_response), label="Réponse au siège du conducteur")
+plt.xlabel("Temps (s)")
+plt.ylabel("Accélération (m/s²)")
+plt.title("Réponse temporelle en accélération au siège du conducteur")
+plt.grid(True)
+plt.legend()
+plt.show()
+
+# Variation du coefficient d'amortissement à epsilon=0.02 pour vitesses entre 50 et 70 km/h
+damping_ratio_adjusted = 0.02
+speeds = np.linspace(50, 70, 5)  # Vitesse entre 50 et 70 km/h
+omega_speeds = 2 * np.pi * speeds / 3.6 / L  # Calcul de omega pour chaque vitesse
+
+amplitudes_by_speed = []
+for omega_v in omega_speeds:
+    amplitude_v = F0 / np.sqrt((mass_matrix.diagonal() - omega_v**2)**2 + (2 * damping_ratio_adjusted * frequencies * omega_v)**2)
+    amplitudes_by_speed.append(amplitude_v)
+
+# Tracé de l'amplitude en fonction de la vitesse
+plt.figure(figsize=(10, 5))
+plt.plot(speeds, [max(amp) for amp in amplitudes_by_speed], marker="o", color="purple")
+plt.xlabel("Vitesse (km/h)")
+plt.ylabel("Amplitude maximale de réponse (m/s²)")
+plt.title("Influence de la vitesse sur la réponse d'accélération au siège du conducteur")
+plt.grid(True)
+plt.show()
