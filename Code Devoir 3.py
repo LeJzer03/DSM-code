@@ -6,134 +6,117 @@ Created on Sat Nov  9 17:58:42 2024
 """
 
 
-# Importation des bibliothèques nécessaires
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 
-# Données de base
-F0 = 450  # Force d'excitation en Newton
-omega = 436  # Fréquence d'excitation en rad/s
-L = 0.2  # Longueur d'onde en mètres (distance entre pavés)
+# Number of modes and points
+nbr_mode = 4
+nbr_points = 14
 
-# Paramètres temporels pour l'excitation
-time_interval = 0.15  # Intervalle de temps pour le tracé
-time_steps = np.linspace(0, time_interval, 1000)
-F_z = F0 * np.sin(omega * time_steps)
+# Load data from files
+frf_data = np.loadtxt('P2024_frf_Part3_f_ds.txt')
+# Extracting FRF data for comparison
+freq_frf = frf_data[:, 0]
+re_frf = frf_data[:, 1]
+im_frf = frf_data[:, 2]
 
-# Tracé de l'évolution temporelle de la force d'excitation
-plt.figure(figsize=(10, 5))
-plt.plot(time_steps, F_z, label="Force d'excitation Fz")
-plt.xlabel("Temps (s)")
-plt.ylabel("Force (N)")
-plt.title("Évolution temporelle de la force d'excitation")
-plt.grid(True)
+# Load frequencies and damping factors for the modes
+frequencies_data = np.loadtxt('P2024_f_eps_Part3.txt')
+frequencies = frequencies_data[:, 0]  # Natural frequencies in Hz
+damping_factors = frequencies_data[:, 1]  # Damping factors
+
+# Convert natural frequencies to pulsations (rad/s)
+pulsations_propres = 2 * np.pi * frequencies  # ω_r = 2πf
+
+# Load mode shapes
+modes = np.loadtxt('P2024_modes_Part3.txt')/1000  # Shape: (14 locations, 4 modes)
+
+# Define the Transfer Function H_calcul
+def H_calcul(omega, modes, pulsations_propres, amortissement):
+    """
+    Calculates a specific element of the transfer function matrix H(ω).
+    
+    Parameters:
+    - omega: Angular frequency (rad/s)
+    - modes: Mode shape matrix (14 x 4)
+    - pulsations_propres: Natural pulsations of modes (rad/s)
+    - amortissement: Damping factors for modes
+    
+    Returns:
+    - H: Transfer function matrix element (complex)
+    """
+    H = 0 + 0j
+    for r in range(len(pulsations_propres)):
+        # Numerator: -ω² * (mode shape outer product)
+        num = -omega**2 * np.outer(modes[:, r], modes[:, r].T)
+        
+        # Denominator: (ω_r² - ω² + 2i * ε * ω_r * ω)
+        denom = (pulsations_propres[r]**2 - omega**2 + 2j * amortissement[r] * pulsations_propres[r] * omega)
+        
+        H += num / denom
+    return H
+
+# Frequency range for the analysis (same as simulation, 0-1500 Hz)
+freq_range = np.linspace(0, 1500, 4500)
+omega_range = 2 * np.pi * freq_range
+
+# Compute the transfer function over the frequency range for a specific element
+H_values = np.array([H_calcul(w, modes, pulsations_propres, damping_factors)[11, 0] for w in omega_range])
+
+# Bode Plot: Amplitude
+magnitude = 20 * np.log10(np.abs(H_values))
+
+# Plot the Bode Plot
+plt.figure(figsize=(8, 8))
+
+# Bode Amplitude
+plt.subplot(2, 1, 1)
+plt.semilogx(freq_range, magnitude, label="Calculated H(ω)")
+plt.semilogx(freq_frf, 20 * np.log10(np.sqrt(re_frf**2 + im_frf**2)), '--', label="Simulated FRF Data")
+plt.xlabel('Frequency [Hz]',size = 11)
+plt.ylabel('Magnitude [dB]',size = 11)
 plt.legend()
-plt.show()
+plt.title('Diagramme de Bode en amplitude' ,size = 14)
+plt.xlim([1, 1500])  # Avoid the issue with starting from 0 Hz
+plt.ylim([-70, -30])
 
-# Chargement des données modales et de la FRF
-# Remplacer les chemins par les fichiers fournis
-frequencies, damping_ratios = np.loadtxt("P2024_f_eps_Part3.txt", unpack=True)
-mode_shapes = np.loadtxt("P2024_modes_Part3.txt")
-frf_data = np.loadtxt("P2024_frf_Part3_f_ds.txt")
 
-# Construction de la matrice FRF (en termes d'accélération)
-mass_matrix = np.diag(frequencies**2)  # Masses normalisées
-damping_matrix = np.diag(2 * damping_ratios * frequencies)  # Amortissement
+# Highlight resonance and anti-resonance frequencies
+resonance_frequencies = frequencies  # Use natural frequencies for resonance
+for freq in resonance_frequencies:
+    plt.axvline(freq, color='r', linestyle='--', alpha=0.5)  # Vertical line at each resonance
+    plt.annotate(f'Res: {freq:.1f} Hz', (freq, -35), textcoords="offset points", xytext=(0, 10),
+                 ha='center', color='red')
 
-# Tracé du diagramme de Bode (Amplitude en échelle semi-logarithmique)
-freq_range = np.linspace(0, 1500, 1000)
-FRF_amplitude = np.zeros_like(freq_range, dtype=float)
+# Highlight antiresonance frequencies
+antiresonance_indices, _ = find_peaks(-magnitude)
+antiresonance_frequencies = freq_range[antiresonance_indices]
+for freq in antiresonance_frequencies:
+    plt.axvline(freq, color='b', linestyle='--', alpha=0.5)  # Vertical line at each antiresonance
+    plt.annotate(f'Anti: {freq:.1f} Hz', (freq, -55), textcoords="offset points", xytext=(0, -15),
+                 ha='center', color='blue')    
+ 
+# Custom legend with a box
+legend_handles = [
+    plt.Line2D([0], [0], color='r', linestyle='--', label='Resonance Frequencies'),
+    plt.Line2D([0], [0], color='b', linestyle='--', label='Antiresonance Frequencies')
+]
+plt.legend(handles=legend_handles, loc='lower left', fontsize=10, frameon=True, framealpha=0.8, edgecolor='black')
 
-for i, freq in enumerate(freq_range):
-    frf_sum = 0
-    for mode in range(len(frequencies)):
-        frf_mode = F0 / np.sqrt((mass_matrix[mode, mode] - freq**2)**2 + (damping_matrix[mode, mode] * freq)**2)
-        frf_sum += frf_mode
-    FRF_amplitude[i] = frf_sum
 
-plt.figure(figsize=(10, 5))
-plt.semilogy(freq_range, FRF_amplitude)
-plt.xlabel("Fréquence (Hz)")
-plt.ylabel("Amplitude FRF (m/s²/N)")
-plt.title("Diagramme de Bode en amplitude")
-plt.grid(True)
-plt.show()
+# Nyquist Plot: Real vs Imaginary
+real_part = np.real(H_values)
+imag_part = np.imag(H_values)
 
-# Diagramme de Nyquist
-FRF_real = np.zeros_like(freq_range, dtype=float)
-FRF_imag = np.zeros_like(freq_range, dtype=float)
-
-for mode in range(len(frequencies)):
-    real_part = F0 * (frequencies[mode]**2 - freq_range**2) / \
-                ((frequencies[mode]**2 - freq_range**2)**2 + (2 * damping_ratios[mode] * frequencies[mode] * freq_range)**2)
-    imag_part = F0 * (2 * damping_ratios[mode] * frequencies[mode] * freq_range) / \
-                ((frequencies[mode]**2 - freq_range**2)**2 + (2 * damping_ratios[mode] * frequencies[mode] * freq_range)**2)
-    FRF_real += real_part
-    FRF_imag += imag_part
-
-plt.figure(figsize=(10, 5))
-plt.plot(FRF_real, FRF_imag, label="Nyquist")
-plt.xlabel("Partie réelle de FRF")
-plt.ylabel("Partie imaginaire de FRF")
-plt.title("Diagramme de Nyquist")
-plt.grid(True)
-plt.legend()
-plt.show()
-
-# Comparaison avec les données de FRF fournies
-plt.figure(figsize=(10, 5))
-plt.plot(frf_data[:, 0], frf_data[:, 1], label="FRF Réelle", color="red")
-plt.plot(freq_range, FRF_amplitude, label="FRF Calculée", linestyle="--")
-plt.xlabel("Fréquence (Hz)")
-plt.ylabel("FRF (m/s²/N)")
-plt.title("Comparaison des FRF (réelle vs calculée)")
+plt.figure(figsize=(8, 8))
+plt.plot(real_part, imag_part, label="Calculated H(ω)")
+plt.plot(re_frf, im_frf, '--', label="Simulated FRF Data")
+plt.xlabel('Partie Réelle',size = 14)
+plt.ylabel('Partie Imaginaire', size = 14)
+plt.title('Diagramme de Nyquist',size= 18)
 plt.legend()
 plt.grid(True)
-plt.show()
+plt.axis('equal')
 
-# Calcul de l'amplitude maximale de la réponse pour chaque point de référence
-max_amplitudes = []
-for shape in mode_shapes.T:  # Chaque colonne correspond à un mode
-    response = np.abs(shape * F0)  # Réponse pour la force appliquée
-    max_amplitudes.append(response.max())
-
-# Tracé de l'évolution des amplitudes maximales
-points = np.arange(1, len(max_amplitudes) + 1)
-plt.figure(figsize=(10, 5))
-plt.plot(points, max_amplitudes, marker="o")
-plt.xlabel("Points de référence")
-plt.ylabel("Amplitude maximale de réponse (m/s²)")
-plt.title("Évolution des amplitudes maximales aux points de référence")
-plt.grid(True)
-plt.show()
-
-# Tracé de la réponse temporelle en accélération au siège du conducteur
-driver_response = np.fft.ifft(FRF_amplitude * np.sin(omega * time_steps))
-
-plt.figure(figsize=(10, 5))
-plt.plot(time_steps, np.real(driver_response), label="Réponse au siège du conducteur")
-plt.xlabel("Temps (s)")
-plt.ylabel("Accélération (m/s²)")
-plt.title("Réponse temporelle en accélération au siège du conducteur")
-plt.grid(True)
-plt.legend()
-plt.show()
-
-# Variation du coefficient d'amortissement à epsilon=0.02 pour vitesses entre 50 et 70 km/h
-damping_ratio_adjusted = 0.02
-speeds = np.linspace(50, 70, 5)  # Vitesse entre 50 et 70 km/h
-omega_speeds = 2 * np.pi * speeds / 3.6 / L  # Calcul de omega pour chaque vitesse
-
-amplitudes_by_speed = []
-for omega_v in omega_speeds:
-    amplitude_v = F0 / np.sqrt((mass_matrix.diagonal() - omega_v**2)**2 + (2 * damping_ratio_adjusted * frequencies * omega_v)**2)
-    amplitudes_by_speed.append(amplitude_v)
-
-# Tracé de l'amplitude en fonction de la vitesse
-plt.figure(figsize=(10, 5))
-plt.plot(speeds, [max(amp) for amp in amplitudes_by_speed], marker="o", color="purple")
-plt.xlabel("Vitesse (km/h)")
-plt.ylabel("Amplitude maximale de réponse (m/s²)")
-plt.title("Influence de la vitesse sur la réponse d'accélération au siège du conducteur")
-plt.grid(True)
 plt.show()
