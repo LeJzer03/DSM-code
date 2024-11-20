@@ -5,11 +5,17 @@ Created on Sat Nov  9 17:58:42 2024
 @author: colli
 """
 
-
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
-from scipy.fft import ifft
+from scipy.fft import fft, ifft
+from scipy.interpolate import interp1d
+
+
+# Set the working directory to the script's directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 # Number of modes and points
 nbr_mode = 4
@@ -57,6 +63,12 @@ def H_calcul(omega, modes, pulsations_propres, amortissement):
         
         H += num / denom
     return H
+
+def force(t, F0, Omega):
+    """
+    Computes the force as a function of time.
+    """
+    return F0 * np.sin(Omega * t)
 
 # Frequency range for the analysis (same as simulation, 0-1500 Hz)
 freq_range = np.linspace(0, 1500, 4500)
@@ -150,24 +162,41 @@ reference_points = [
     {"point": "P14", "distance_mm": 1200, "description": "Passenger Seat (E)"}
 ]
 
+#set the w for a 50 kmh speed
+w = 436 #rad/s
+
+# Paramètres de la force
+F0 = 450  # Amplitude de la force en Newtons
+Omega = 436  # Fréquence d'excitation en rad/s
+T_max = 0.15  # Durée de la simulation en secondes
+
 # Compute the maximum amplitude of the response (acceleration) for each reference point
 max_amplitudes = np.zeros(len(reference_points))
 
-for i in range(len(reference_points)):
-    H_values_point = np.array([H_calcul(w, modes, pulsations_propres, damping_factors)[i, 0] for w in omega_range])
-    max_amplitudes[i] = np.max(np.abs(H_values_point))
+# Temps de simulation
+t_values = np.linspace(0, T_max, num=1000)  # Ajustez le nombre de points si nécessaire
 
-# Extract distances for x-axis
+for i in range(len(reference_points)):
+    H_values_point = H_calcul(w, modes, pulsations_propres, damping_factors)[i, 0]
+    accelerations = np.array([H_values_point * force(t,F0,Omega) for t in t_values])
+    max_amplitudes[i] = np.max(np.abs(accelerations))
+    
+
+
 distances_mm = [point["distance_mm"] for point in reference_points]
 
-
+# Interpolation des points
+interp_func = interp1d(distances_mm, max_amplitudes, kind='linear')
+distances_interp = np.linspace(min(distances_mm), max(distances_mm), num=500)
+max_amplitudes_interp = interp_func(distances_interp)
 
 # Tracer l'évolution de l'amplitude maximale pour chaque point de référence
 plt.figure(figsize=(10, 6))
-plt.plot(distances_mm, max_amplitudes, marker='o', linestyle='-', color='b')
+plt.plot(distances_interp, max_amplitudes_interp, linestyle='-', color='b', label='Interpolation')  # Ligne interpolée bleue
+plt.scatter(distances_mm, max_amplitudes, color='red', label='Valeurs au capteurs')  # Points rouges
 plt.xlabel(r'Distance depuis la fourche le long du cadre [mm]', size=14)
 plt.ylabel(r'Amplitude Maximale de la Réponse (Accélération) $[m/s^2]$', size=11)
-plt.title(r'Évolution de l\'Amplitude Maximale de la Réponse pour Chaque Point de Référence', size=16)
+plt.title(r"Évolution de l'Amplitude Maximale de la Réponse pour Chaque Point de Référence", size=16)
 plt.xticks(distances_mm)  # Définir les graduations de l'axe des x à chaque distance
 plt.xlim(0, 1200)  # Définir les limites de l'axe des x de 0 à 1200 mm
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
@@ -175,25 +204,119 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 
 # Ajouter les noms des points au-dessus des points d'amplitude maximale avec un décalage vertical
-offset = 0.003  # Ajustez cette valeur selon vos besoins
+offset = 0.0005  # Ajustez cette valeur selon vos besoins
 for i, point in enumerate(reference_points):
     if point["point"] == "P1":
-        plt.text(distances_mm[i] + 15, max_amplitudes[i] + offset - 0.001, point["point"], ha='center', va='bottom', fontsize=10)
+        plt.text(distances_mm[i] + 15, max_amplitudes[i] + offset - 0.0015, point["point"], ha='center', va='bottom', fontsize=10)
     elif point["point"] == "P5":
-        plt.text(distances_mm[i], max_amplitudes[i] + offset + 0.003, "P5-P6", ha='center', va='bottom', fontsize=10)
+        plt.text(distances_mm[i], max_amplitudes[i] + offset , "P5-P6", ha='center', va='bottom', fontsize=10)
     elif point["point"] == "P6":
         continue  # Skip P6 as it is grouped with P5
     elif point["point"] == "P12":
-        plt.text(distances_mm[i], max_amplitudes[i] + offset + 0.003, point["point"], ha='center', va='bottom', fontsize=10)
+        plt.text(distances_mm[i], max_amplitudes[i] + offset + 0.0002, point["point"], ha='center', va='bottom', fontsize=10)
     elif point["point"] == "P13":
-        plt.text(distances_mm[i] - 15, max_amplitudes[i] + offset + 0.003, point["point"], ha='center', va='bottom', fontsize=10)
+        plt.text(distances_mm[i] - 15, max_amplitudes[i] + offset + 0.0001, point["point"], ha='center', va='bottom', fontsize=10)
     elif point["point"] == "P14":
-        plt.text(distances_mm[i] - 25, max_amplitudes[i] + offset, point["point"], ha='center', va='bottom', fontsize=10)
+        plt.text(distances_mm[i] - 25, max_amplitudes[i] , point["point"], ha='center', va='bottom', fontsize=10)
     else:
         plt.text(distances_mm[i], max_amplitudes[i] + offset, point["point"], ha='center', va='bottom', fontsize=10)
+
+# Ajouter la légende
+plt.legend()
 
 plt.show()
 
 
 
 
+# Définition des paramètres de simulation
+F0 = 450  # Amplitude de la force en Newtons
+Omega = 436  # Fréquence d'excitation en rad/s
+T_max = 0.15  # Durée de la simulation en secondes
+
+# Temps de simulation
+t_values = np.linspace(0, T_max, num=1000)
+
+
+# Calcul de la réponse temporelle pour le point P12
+H_values_point_P12 = H_calcul(Omega, modes, pulsations_propres, damping_factors)[11, 0]
+accelerations = np.array([H_values_point_P12 * force(t, F0, Omega) for t in t_values])
+
+
+# Partie réelle de l'accélération
+acc_real = np.real(accelerations)
+
+# Magnitude (module) de l'accélération avec signe
+acc_magnitude_signed = np.abs(accelerations) * np.sign(acc_real)
+
+# Tracer la réponse temporelle avec le module signé en utilisant le même template
+plt.figure(figsize=(10, 6))
+plt.plot(t_values, acc_magnitude_signed, linestyle='-', color='b', label=r"Réponse temporelle (accélération) avec module signé pour P12")
+plt.xlabel(r"Temps [s]", size=14)
+plt.ylabel(r"Accélération $[m/s^2]$", size=14)
+plt.title(r"Réponse temporelle de l'accélération au siège du pilote en fonction du temps", size=16)
+plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
+plt.minorticks_on()
+plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+# Update damping factors to 0.02 for all modes
+damping_factors = np.full_like(damping_factors, 0.02)
+
+F0 = 450  # Amplitude de la force en Newtons
+wavelength = 0.2  # Longueur d'onde en mètres (longueur d'un pavé)
+T_max = 0.15  # Durée de la simulation en secondes
+speeds_kmh = np.linspace(50, 70, num=200).astype(float)  # Vitesse en km/h
+
+# Conversion des vitesses en m/s
+speeds_m_s = speeds_kmh * 1000 / 3600
+
+# Calcul de la période d'excitation pour chaque vitesse
+T = wavelength / speeds_m_s
+
+# Calcul de la fréquence d'excitation (Omega) pour chaque vitesse
+speeds_rad_s = 2 * np.pi / T
+#print(speeds_rad_s)
+
+# Compute the maximum amplitude of the response for each speed
+max_amplitudes_speeds = np.zeros(len(speeds_rad_s))
+
+# Temps de simulation
+t_values = np.linspace(0, T_max, num=1000)
+
+
+
+
+for i, w in enumerate(speeds_rad_s):
+    H_values_point_P12 = H_calcul(w, modes, pulsations_propres, damping_factors)[11, 0]
+    accelerations = np.array([H_values_point_P12 * force(t, F0, w) for t in t_values])
+
+    #print shape de force(t,F0,Omega)
+    
+    print(H_values_point_P12.shape)
+    
+    # Vérification des valeurs intermédiaires
+    #print(f"w: {w}, H_values_point_P12: {H_values_point_P12}, accelerations[:5]: {accelerations[:5]}")
+    
+    max_amplitudes_speeds[i] = np.max(np.abs(accelerations))
+
+
+# Tracer l'amplitude maximale de la réponse en fonction de la vitesse
+plt.figure(figsize=(10, 6))
+plt.plot(speeds_kmh, max_amplitudes_speeds, linestyle='-', color='b')
+plt.xlabel(r'Vitesse de la moto [km/h]', size=14)
+plt.ylabel(r'Amplitude Maximale de la Réponse (Accélération) $[m/s^2]$', size=14)
+plt.title(r"Amplitude Maximale de la Réponse en Fonction de la Vitesse de la Moto", size=16)
+plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
+plt.minorticks_on()
+plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+plt.show()
