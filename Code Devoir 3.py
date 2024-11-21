@@ -140,6 +140,7 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 plt.axis('equal')
 
+plt.savefig('nyquist_plot.pdf')
 plt.show()
 
 
@@ -204,7 +205,7 @@ plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
 
 # Ajouter les noms des points au-dessus des points d'amplitude maximale avec un décalage vertical
-offset = 0.0005  # Ajustez cette valeur selon vos besoins
+offset = 0.2  # Ajustez cette valeur selon vos besoins
 for i, point in enumerate(reference_points):
     if point["point"] == "P1":
         plt.text(distances_mm[i] + 15, max_amplitudes[i] + offset - 0.0015, point["point"], ha='center', va='bottom', fontsize=10)
@@ -224,6 +225,7 @@ for i, point in enumerate(reference_points):
 # Ajouter la légende
 plt.legend()
 
+plt.savefig('amplitude_plot.pdf')
 plt.show()
 
 
@@ -302,7 +304,7 @@ for i, w in enumerate(speeds_rad_s):
 
     #print shape de force(t,F0,Omega)
     
-    print(H_values_point_P12.shape)
+    #print(H_values_point_P12.shape)
     
     # Vérification des valeurs intermédiaires
     #print(f"w: {w}, H_values_point_P12: {H_values_point_P12}, accelerations[:5]: {accelerations[:5]}")
@@ -319,4 +321,5 @@ plt.title(r"Amplitude Maximale de la Réponse en Fonction de la Vitesse de la Mo
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+plt.savefig('speed_response_plot.pdf')
 plt.show()
