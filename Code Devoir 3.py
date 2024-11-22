@@ -82,18 +82,43 @@ epsilon = 1e-10  # Petite valeur pour éviter la division par zéro
 # Bode Plot: Amplitude
 magnitude = 20 * np.log10(np.abs(H_values) + epsilon)
 
-
-# Plot the Bode Plot
-plt.figure(figsize=(8, 8))
+# Plot the Bode Plot without annotations
+plt.figure(figsize=(8, 6))
 # Bode Amplitude
 plt.subplot(2, 1, 1)
-plt.semilogx(freq_range, magnitude, label=r'Calculated $H(\omega)$')
-plt.semilogx(freq_frf, 20 * np.log10(np.sqrt(re_frf**2 + im_frf**2)), '--', label=r'Simulated FRF Data')
+plt.plot(freq_range, magnitude, label=r'Calculated $H(\omega)$')
+plt.plot(freq_frf, 20 * np.log10(np.sqrt(re_frf**2 + im_frf**2)), '--', label=r'Simulated FRF Data')
 plt.xlabel(r'Frequency [Hz]', size=11)
 plt.ylabel(r'Magnitude [dB]', size=11)
 plt.legend()
 plt.title(r'Diagramme de Bode en amplitude', size=14)
-plt.xlim([1, 1500])  # Avoid the issue with starting from 0 Hz
+plt.xlim([-100, 1500])  # Avoid the issue with starting from 0 Hz
+plt.ylim([-70, -30])
+plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
+plt.minorticks_on()
+plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+
+# Custom legend with a box
+legend_handles = [
+    plt.Line2D([0], [0], color='r', linestyle='--', label=r'Resonance Frequencies'),
+    plt.Line2D([0], [0], color='b', linestyle='--', label=r'Antiresonance Frequencies')
+]
+#plt.legend(handles=legend_handles, loc='lower left', fontsize=10, frameon=True, framealpha=0.8, edgecolor='black')
+
+# Save the Bode plot without annotations as PDF
+plt.savefig('bode_plot_no_annotations.pdf')
+
+# Plot the Bode Plot with annotations
+plt.figure(figsize=(8, 6))
+# Bode Amplitude
+plt.subplot(2, 1, 1)
+plt.plot(freq_range, magnitude, label=r'Calculated $H(\omega)$')
+plt.plot(freq_frf, 20 * np.log10(np.sqrt(re_frf**2 + im_frf**2)), '--', label=r'Simulated FRF Data')
+plt.xlabel(r'Frequency [Hz]', size=11)
+plt.ylabel(r'Magnitude [dB]', size=11)
+plt.legend()
+plt.title(r'Diagramme de Bode en amplitude (avec les pics de résonance et anti-résonance)', size=14)
+plt.xlim([-100, 1500])  # Avoid the issue with starting from 0 Hz
 plt.ylim([-70, -30])
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
@@ -101,17 +126,21 @@ plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=
 
 # Highlight resonance and anti-resonance frequencies
 resonance_frequencies = frequencies  # Use natural frequencies for resonance
-for freq in resonance_frequencies:
+for i, freq in enumerate(resonance_frequencies):
     plt.axvline(freq, color='r', linestyle='--', alpha=0.5)  # Vertical line at each resonance
-    plt.annotate(rf'Res: {freq:.1f} Hz', (freq, -35), textcoords="offset points", xytext=(0, 10),
-                 ha='center', color='red')
+    if i == 0:
+        plt.annotate(rf'Res: {freq:.1f} Hz', (freq, -55), textcoords="offset points", xytext=(0, 10),
+                     ha='center', color='red')  # Lower y-coordinate for the first resonance
+    else:
+        plt.annotate(rf'Res: {freq:.1f} Hz', (freq, -36), textcoords="offset points", xytext=(0, 10),
+                     ha='center', color='red')
 
 # Highlight antiresonance frequencies
 antiresonance_indices, _ = find_peaks(-magnitude)
 antiresonance_frequencies = freq_range[antiresonance_indices]
 for freq in antiresonance_frequencies:
     plt.axvline(freq, color='b', linestyle='--', alpha=0.5)  # Vertical line at each antiresonance
-    plt.annotate(rf'Anti: {freq:.1f} Hz', (freq, -55), textcoords="offset points", xytext=(0, -15),
+    plt.annotate(rf'Anti: {freq:.1f} Hz', (freq, -50), textcoords="offset points", xytext=(0, -15),
                  ha='center', color='blue')    
 
 # Custom legend with a box
@@ -121,8 +150,9 @@ legend_handles = [
 ]
 plt.legend(handles=legend_handles, loc='lower left', fontsize=10, frameon=True, framealpha=0.8, edgecolor='black')
 
-
-
+# Save the Bode plot with annotations as PDF
+plt.savefig('bode_plot_with_annotations.pdf')
+plt.show()
 # Nyquist Plot: Real vs Imaginary
 real_part = np.real(H_values)
 imag_part = np.imag(H_values)
@@ -165,6 +195,7 @@ reference_points = [
 
 #set the w for a 50 kmh speed
 w = 436 #rad/s
+#w = 550.22 #rad/s
 
 # Paramètres de la force
 F0 = 450  # Amplitude de la force en Newtons
@@ -179,7 +210,7 @@ t_values = np.linspace(0, T_max, num=1000)  # Ajustez le nombre de points si né
 
 for i in range(len(reference_points)):
     H_values_point = H_calcul(w, modes, pulsations_propres, damping_factors)[i, 0]
-    accelerations = np.array([H_values_point * force(t,F0,Omega) for t in t_values])
+    accelerations = np.array([H_values_point * force(t,F0,w) for t in t_values])
     max_amplitudes[i] = np.max(np.abs(accelerations))
     
 
@@ -260,11 +291,8 @@ plt.title(r"Réponse temporelle de l'accélération au siège du pilote en fonct
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+plt.savefig('time_response_plot.pdf')
 plt.show()
-
-
-
-
 
 
 
@@ -297,29 +325,56 @@ t_values = np.linspace(0, T_max, num=1000)
 
 
 
-
 for i, w in enumerate(speeds_rad_s):
     H_values_point_P12 = H_calcul(w, modes, pulsations_propres, damping_factors)[11, 0]
     accelerations = np.array([H_values_point_P12 * force(t, F0, w) for t in t_values])
 
-    #print shape de force(t,F0,Omega)
+    acc_real = np.real(accelerations)
+    acc_magnitude_signed = np.abs(accelerations) * np.sign(acc_real)
+    max_amplitudes_speeds[i] = np.max(acc_magnitude_signed)
+
+# Find the speed with the maximum amplitude
+max_index = np.argmax(max_amplitudes_speeds)
+max_speed_kmh = speeds_kmh[max_index]
+max_amplitude = max_amplitudes_speeds[max_index]
+
+print(f"La vitesse à laquelle il y a le maximum d'amplitude est {max_speed_kmh:.2f} km/h avec une amplitude maximale de {max_amplitude:.4f} m/s^2")
+
+"""
+#de la merde pour test un truc 
+# Compute the maximum amplitude of the response for each speed and each point
+max_amplitudes_speeds = np.zeros(len(speeds_rad_s))
+
+# Temps de simulation
+t_values = np.linspace(0, T_max, num=1000)
+
+for i, w in enumerate(speeds_rad_s):
+    for j in range(len(reference_points)):
+        H_values_point = H_calcul(w, modes, pulsations_propres, damping_factors)[i, 0]
+        accelerations = np.array([H_values_point * force(t,F0,w) for t in t_values])
+        max_amplitudes[j] = np.max(np.abs(accelerations))
+    print('max_amplitudes',max_amplitudes)
     
-    #print(H_values_point_P12.shape)
-    
-    # Vérification des valeurs intermédiaires
-    #print(f"w: {w}, H_values_point_P12: {H_values_point_P12}, accelerations[:5]: {accelerations[:5]}")
-    
-    max_amplitudes_speeds[i] = np.max(np.abs(accelerations))
+"""
+
+
 
 
 # Tracer l'amplitude maximale de la réponse en fonction de la vitesse
 plt.figure(figsize=(10, 6))
 plt.plot(speeds_kmh, max_amplitudes_speeds, linestyle='-', color='b')
 plt.xlabel(r'Vitesse de la moto [km/h]', size=14)
-plt.ylabel(r'Amplitude Maximale de la Réponse (Accélération) $[m/s^2]$', size=14)
+plt.ylabel(r'Amplitude Maximale de la Réponse (Accélération) $[m/s^2]$', size=12)
 plt.title(r"Amplitude Maximale de la Réponse en Fonction de la Vitesse de la Moto", size=16)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
-plt.savefig('speed_response_plot.pdf')
+
+# Highlight the maximum amplitude point
+plt.plot(max_speed_kmh, max_amplitude, 'ro')  # Red dot at the maximum point
+plt.annotate(f'Max: {max_speed_kmh:.2f} km/h', xy=(max_speed_kmh, max_amplitude), xytext=(max_speed_kmh + 1, max_amplitude + 0.1), fontsize=12, color='red')
+
+# Save the speed response plot as PDF
+#plt.savefig('speed_response_plot.pdf')
+
 plt.show()
