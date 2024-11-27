@@ -165,6 +165,30 @@ plt.figure(figsize=(8, 8))
 plt.plot(real_part, imag_part, label=r'Calculated $H(\omega)$')
 plt.plot(re_frf, im_frf, '--', label=r'Simulated FRF Data')
 
+# Récupérer les parties réelles et imaginaires pour les fréquences de résonance
+resonance_real = np.real([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in frequencies])
+resonance_imag = np.imag([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in frequencies])
+
+# Récupérer les parties réelles et imaginaires pour les fréquences d'anti-résonance
+antiresonance_real = np.real([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in antiresonance_frequencies])
+antiresonance_imag = np.imag([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in antiresonance_frequencies])
+
+# Calculer la dérivée du tracé
+delta_real = np.diff(real_part)
+delta_imag = np.diff(imag_part)
+
+# Détecter les changements de signe dans la dérivée
+sign_changes = np.where(np.diff(np.sign(delta_real)))[0]
+
+# Ajouter la dernière fréquence de résonance détectée
+last_resonance_index = sign_changes[-1]
+last_resonance_freq = freq_range[last_resonance_index]
+
+# Tracer les points de résonance et d'anti-résonance sur le diagramme de Nyquist
+plt.scatter(resonance_real, resonance_imag, color='r', label=r'Points de Résonance')
+plt.scatter(antiresonance_real, antiresonance_imag, color='b', label='Points d\'Antiresonance')
+
+
 plt.xlabel(r'Partie Réelle', size=14)
 plt.ylabel(r'Partie Imaginaire', size=14)
 plt.title(r'Diagramme de Nyquist', size=18)
