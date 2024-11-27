@@ -169,6 +169,22 @@ plt.plot(re_frf, im_frf, '--', label=r'Simulated FRF Data')
 resonance_real = np.real([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in frequencies])
 resonance_imag = np.imag([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in frequencies])
 
+
+# Nyquist Plot: Real vs Imaginary
+real_part = np.real(H_values)
+imag_part = np.imag(H_values)
+
+plt.figure(figsize=(8, 8))
+plt.plot(real_part, imag_part, label=r'Calculated $H(\omega)$')
+plt.plot(re_frf, im_frf, '--', label=r'Simulated FRF Data')
+
+# Récupérer les parties réelles et imaginaires pour les fréquences de résonance
+resonance_real = np.real([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in frequencies])
+resonance_imag = np.imag([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in frequencies])
+
+# Append 50 Hz to the antiresonance frequencies
+antiresonance_frequencies = np.append(antiresonance_frequencies, 25)
+
 # Récupérer les parties réelles et imaginaires pour les fréquences d'anti-résonance
 antiresonance_real = np.real([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in antiresonance_frequencies])
 antiresonance_imag = np.imag([H_calcul(2 * np.pi * freq, modes, pulsations_propres, damping_factors)[11, 0] for freq in antiresonance_frequencies])
@@ -188,11 +204,15 @@ last_resonance_freq = freq_range[last_resonance_index]
 plt.scatter(resonance_real, resonance_imag, color='r', label=r'Points de Résonance')
 plt.scatter(antiresonance_real, antiresonance_imag, color='b', label='Points d\'Antiresonance')
 
+# Ajouter le point d'anti-résonance estimé en bleu clair
+estimated_antiresonance_freq = 25  # Fréquence estimée ajoutée
+estimated_index = np.where(antiresonance_frequencies == estimated_antiresonance_freq)[0][0]
+plt.scatter(antiresonance_real[estimated_index], antiresonance_imag[estimated_index], color='steelblue', marker='.', s=200, alpha=1.0, label='Point d\'antirésonance estimé')
 
 plt.xlabel(r'Partie Réelle', size=14)
 plt.ylabel(r'Partie Imaginaire', size=14)
 plt.title(r'Diagramme de Nyquist', size=18)
-plt.legend()
+plt.legend(loc='upper right', fontsize=9)
 plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
 plt.minorticks_on()
 plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
