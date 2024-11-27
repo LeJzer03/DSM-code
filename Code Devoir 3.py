@@ -145,22 +145,26 @@ for freq in antiresonance_frequencies:
 
 # Custom legend with a box
 legend_handles = [
-    plt.Line2D([0], [0], color='r', linestyle='--', label=r'Resonance Frequencies'),
-    plt.Line2D([0], [0], color='b', linestyle='--', label=r'Antiresonance Frequencies')
+    plt.Line2D([0], [0], color='r', linestyle='--', label=r'Fréquence de Resonance'),
+    plt.Line2D([0], [0], color='b', linestyle='--', label='Fréquence d\'Antiresonance')
 ]
 plt.legend(handles=legend_handles, loc='lower left', fontsize=10, frameon=True, framealpha=0.8, edgecolor='black')
 
 # Save the Bode plot with annotations as PDF
 plt.savefig('bode_plot_with_annotations.pdf')
 plt.show()
+
+
+
+
 # Nyquist Plot: Real vs Imaginary
 real_part = np.real(H_values)
 imag_part = np.imag(H_values)
 
-
 plt.figure(figsize=(8, 8))
 plt.plot(real_part, imag_part, label=r'Calculated $H(\omega)$')
 plt.plot(re_frf, im_frf, '--', label=r'Simulated FRF Data')
+
 plt.xlabel(r'Partie Réelle', size=14)
 plt.ylabel(r'Partie Imaginaire', size=14)
 plt.title(r'Diagramme de Nyquist', size=18)
@@ -172,7 +176,6 @@ plt.axis('equal')
 
 plt.savefig('nyquist_plot.pdf')
 plt.show()
-
 
 
 # Reference points based on the image and distances provided
@@ -378,3 +381,48 @@ plt.annotate(f'Max: {max_speed_kmh:.2f} km/h', xy=(max_speed_kmh, max_amplitude)
 #plt.savefig('speed_response_plot.pdf')
 
 plt.show()
+
+
+# Update damping factors to 0.02 for all modes
+damping_factors = np.full_like(damping_factors, 0.02)
+
+# Compute the transfer function over the frequency range for a specific element
+H_values = np.array([H_calcul(w, modes, pulsations_propres, damping_factors)[11, 0] for w in omega_range])
+
+# Bode Plot: Amplitude
+magnitude = 20 * np.log10(np.abs(H_values) + epsilon)
+
+# Plot the Bode Plot with updated damping factors
+plt.figure(figsize=(8, 6))
+# Bode Amplitude
+plt.subplot(2, 1, 1)
+plt.plot(freq_range, magnitude, label=r'Calculated $H(\omega)$ with $\zeta = 0.02$')
+plt.plot(freq_frf, 20 * np.log10(np.sqrt(re_frf**2 + im_frf**2)), '--', label=r'Simulated FRF Data')
+plt.xlabel(r'Frequency [Hz]', size=11)
+plt.ylabel(r'Magnitude [dB]', size=11)
+plt.legend()
+plt.title(r'Diagramme de Bode en amplitude avec $\zeta = 0.02$', size=14)
+plt.xlim([-100, 1500])  # Avoid the issue with starting from 0 Hz
+plt.ylim([-70, -30])
+plt.grid(True, linestyle='--', linewidth=0.5, color='black', alpha=0.5)
+plt.minorticks_on()
+plt.grid(True, which='minor', linestyle=':', linewidth=0.3, color='gray', alpha=0.7)
+
+# Recalculate antiresonance frequencies
+antiresonance_indices, _ = find_peaks(-magnitude)
+antiresonance_frequencies = freq_range[antiresonance_indices]
+
+# Tracer les lignes verticales et les annotations pour les fréquences d'anti-résonance
+for freq in antiresonance_frequencies:
+    plt.axvline(freq, color='b', linestyle='--', alpha=0.5)  # Ligne verticale à chaque anti-résonance
+    plt.annotate(rf'Anti: {freq:.1f} Hz', (freq, -50), textcoords="offset points", xytext=(0, -15),
+                 ha='center', color='blue')
+
+# Save the Bode plot with updated damping factors as PDF
+plt.savefig('bode_plot_damping_0_02.pdf')
+plt.show()
+
+# Print the antiresonance frequencies
+print("Antiresonance Frequencies (Hz):")
+for freq in antiresonance_frequencies:
+    print(f"{freq:.2f}")
