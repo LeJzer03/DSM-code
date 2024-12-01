@@ -16,10 +16,10 @@ Modes = np.loadtxt("P2024_Modes_Part4.txt", dtype="float")*1e-3  # Modes en mèt
 
 
 # Paramètres du cadre de la moto
-n = 6  # Nombre de fonctions d'approximation à utiliser
+n = 8  # Nombre de fonctions d'approximation à utiliser
 l = 1.2  # Longueur du cadre [m]
 rho = 7850  # Densité du matériau [kg/m^3]
-A = 0.0225  # Section transversale [m^2] = 0.15*0.15 - (0.15-0.01)**2 
+A = 0.0225  # Section transversale [m^2] = 0.15*0.15  #pq marche pas avec 0.15*0.15 - (0.15-0.01)**2
 E = 2.1e11  # Module d'Young [Pa]
 I = 1.83866 * 10**-5  # Moment quadratique [m^4]
 
@@ -193,16 +193,53 @@ plt.show()
 
 ############################################ RELATIVE ERRORS ############################################
 # Calcul des erreurs relatives
-relative_errors = []
+def generate_latex_tables(n, nb_modes):
+    # Calculer les fréquences analytiques avec n = 
+    w_anal, _ = f(n)
+    
+    # Charger les fréquences numériques à partir du fichier
+    w_num = np.loadtxt('P2024_f_Part4.txt', dtype="float")
+    
+    # Initialiser un tableau pour les erreurs
+    relative_errors = []
+    
+    # Calculer les erreurs relatives pour les nb_modes premiers modes
+    for i in range(nb_modes):
+        error = (np.abs(w_anal[i] - w_num[i]) / w_num[i]) * 100
+        relative_errors.append(error)
+    
+    # Générer le tableau LaTeX pour les fréquences
+    latex_table = "\\begin{table}[h!] \n"
+    latex_table += "   \\centering \n"
+    latex_table += "   \\begin{tabular}{|" + "c|" * (nb_modes + 1) + "} \n"
+    latex_table += "       \\hline \n"
+    latex_table += "       Mode & " + " & ".join([f"$f_{i+1}$ (Hz)" for i in range(nb_modes)]) + " \\\\ \\hline \n"
+    latex_table += "       Théorique & " + " & ".join([f"{w_anal[i]:.3f}" for i in range(nb_modes)]) + " \\\\ \\hline \n"
+    latex_table += "       Numérique & " + " & ".join([f"{w_num[i]:.3f}" for i in range(nb_modes)]) + " \\\\ \\hline \n"
+    latex_table += "   \\end{tabular} \n"
+    latex_table += "   \\caption{Comparaison des fréquences propres théoriques et numériques.} \n"
+    latex_table += "   \\label{tab:frequences} \n"
+    latex_table += "\\end{table}"
+    
+    # Générer le tableau LaTeX pour les erreurs relatives
+    latex_table_err = "\\begin{table}[h!] \n"
+    latex_table_err += "   \\centering \n"
+    latex_table_err += "   \\begin{tabular}{|" + "c|" * (nb_modes + 1) + "} \n"
+    latex_table_err += "       \\hline \n"
+    latex_table_err += "       Mode & " + " & ".join([f"$\\varepsilon_{i+1}$ (\%)" for i in range(nb_modes)]) + " \\\\ \\hline \n"
+    latex_table_err += "       Erreur & " + " & ".join([f"{relative_errors[i]:.2f}" for i in range(nb_modes)]) + " \\\\ \\hline \n"
+    latex_table_err += "   \\end{tabular} \n"
+    latex_table_err += "   \\caption{Erreurs relatives des fréquences propres.} \n"
+    latex_table_err += "   \\label{tab:erreurs} \n"
+    latex_table_err += "\\end{table}"
+    
+    print(latex_table)
+    print("")
+    print(latex_table_err)
 
-for i in range(len(Freq)):
-    error = abs((Freq[i] - freq[i]) / Freq[i]) * 100
-    relative_errors.append(error)
 
-# Affichage des erreurs relatives
-for i, error in enumerate(relative_errors):
-    print(f"Erreur relative pour le mode {i + 1}: {error:.2f}%")
-
+# Appeler la fonction pour générer et afficher les tableaux LaTeX
+generate_latex_tables(n,nb_modes=4)
 
 
 
