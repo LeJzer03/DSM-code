@@ -145,13 +145,17 @@ def f(n):
             K[i,j] = continu_K + ponctuel_k1l + ponctuel_k1r + ponctuel_k2l + ponctuel_k2r
                 
     #M = M/((rho*A*l)+mF+mG+mH+mI)
+    print("M : ", M)
+    print("K : ", K)
     
+
     omega_squared, vect_pro = eigh(K,M)
     
     omega = np.sqrt(omega_squared)
     freq = omega /(2 * np.pi)
     
     return freq, vect_pro
+
 
 freq, vec = f(n)
 print(freq)
