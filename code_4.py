@@ -21,7 +21,7 @@ l = 1.2  # Longueur du cadre [m]
 rho = 7850  # Densité du matériau [kg/m^3]
 A = 0.0225  # Section transversale [m^2] = 0.15*0.15  #pq marche pas avec 0.15*0.15 - (0.15-0.01)**2
 E = 2.1e11  # Module d'Young [Pa]
-I = 1.83866 * 10**-5  # Moment quadratique [m^4]
+I = 1.83866 * 10**-5  # Moment quadratique [m^4] , calcule avant au devoir 1
 
 """
 n = 6  # Nombre de fonctions d'approximation à utiliser
