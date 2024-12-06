@@ -17,7 +17,7 @@ L = 1.2  # Longueur du cadre [m]
 E = 2.1e11  # Module d'Young [Pa]
 I = 1.83866 * 10**-5  # Moment quadratique [m^4]
 rho = 7850  # Densité du matériau [kg/m^3]
-A = 0.0225  # Section transversale [m^2]
+A = 0.15*0.15 - (0.15-0.01)**2 #0.0225  # Section transversale [m^2]
 
 
 mB = 75.02  # Masse à la position B [kg]
@@ -61,6 +61,15 @@ def phi_deriv(x, L, n):
 
 #matrix of stiffness
 def stiff(N) : 
+    """
+    Constructs the stiffness matrix K for N degrees of freedom using symbolic integration.
+
+    Parameters:
+    - N: The number of degrees of freedom.
+
+    Returns:
+    - K: The stiffness matrix of size NxN.
+    """
     K = np.zeros([N,N])
     for i in range(N):
         for j in range(N):
@@ -106,6 +115,16 @@ def stiff(N) :
 
 #matrix of mass
 def mass(N) :
+    """
+    Constructs the mass matrix M for N degrees of freedom using symbolic integration.
+
+    Parameters:
+    - N: The number of degrees of freedom.
+    
+    Returns:
+    - M: The mass matrix of size NxN.
+    """
+
     M = np.zeros([N, N])
     for i in range(N):
         for j in range(N):
@@ -138,6 +157,18 @@ def mass(N) :
 
 #computing n natural fréquencies with Rayleigh Ritz
 def n_w(n, nb_approx):
+    """
+    Computes and returns the first n natural frequencies and their corresponding mode shapes
+    using the Rayleigh-Ritz method.
+
+    Parameters:
+    - n: The number of natural frequencies to compute.
+    - nb_approx: The number of approximations to use in the calculation.
+
+    Returns:
+    - w: A sorted array of the first n natural frequencies in Hz.
+    - modes: The corresponding mode shapes.
+    """
     K = stiff(n)
     M = mass(n)
     
@@ -198,14 +229,23 @@ def convergence():
     plt.savefig('1-convergence.pdf')
     plt.show()
         
-#computing relative errors on frequencies with n = 10 (good convergence)     
+# Computing relative errors on frequencies with n = 10 (good convergence)
 def relative_errors(nb_approx):
-    w_anal, _ = n_w(4,nb_approx)
+    """
+    Computes and returns the relative errors between the analytical and numerical frequencies.
+
+    Parameters:
+    - nb_approx: The number of approximations to use in the calculation.
+
+    Returns:
+    - errors: An array of relative errors (in percentage) for the first 4 frequencies.
+    """
+    w_anal, _ = n_w(4, nb_approx)
     print(w_anal)
     w_num = np.loadtxt('P2024_f_Part4.txt')
     errors = np.zeros(4)
     for i in range(4):
-        errors[i] = (np.abs(w_anal[i] - w_num[i])/w_num[i])*100
+        errors[i] = (np.abs(w_anal[i] - w_num[i]) / w_num[i]) * 100
     
     return errors
 
@@ -246,7 +286,7 @@ def mode_shapes(m, nb_approx):
     mode_num /= mode_num[0]
     
     
-    f = y(x, mode_anal, 4)
+    f = y(x, mode_anal,4)
     
     fig,ax = plt.subplots()
     plt.grid(True,linestyle='--',color='0.80')
@@ -335,6 +375,7 @@ def MAC(n, nb_approx):
     return M
 
 nb_approx_test = 14
+n = 14
 
 
 #computing n natural fréquencies with Rayleigh Ritz
