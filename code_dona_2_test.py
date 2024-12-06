@@ -137,7 +137,7 @@ def mass(N) :
     return M
 
 #computing n natural fréquencies with Rayleigh Ritz
-def n_w(n):
+def n_w(n, nb_approx):
     K = stiff(n)
     M = mass(n)
     
@@ -199,8 +199,8 @@ def convergence():
     plt.show()
         
 #computing relative errors on frequencies with n = 10 (good convergence)     
-def relative_errors():
-    w_anal, _ = n_w(10)
+def relative_errors(nb_approx):
+    w_anal, _ = n_w(4,nb_approx)
     print(w_anal)
     w_num = np.loadtxt('P2024_f_Part4.txt')
     errors = np.zeros(4)
@@ -228,8 +228,8 @@ def y(x, mode, n):
     return f
         
 #computing theoritical and numerical modes with m being the number of the mode (beginning with 0)
-def mode_shapes(m):
-    _, modes_anal = n_w(10)
+def mode_shapes(m, nb_approx):
+    _, modes_anal = n_w(4,nb_approx)
     
     modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
     
@@ -246,7 +246,7 @@ def mode_shapes(m):
     mode_num /= mode_num[0]
     
     
-    f = y(x, mode_anal, 10)
+    f = y(x, mode_anal, 4)
     
     fig,ax = plt.subplots()
     plt.grid(True,linestyle='--',color='0.80')
@@ -260,10 +260,10 @@ def mode_shapes(m):
     
  
 #computing the MAC matrice with n being the number of modes
-def MAC(n):
+def MAC(n, nb_approx):
     M = np.zeros([n,n])
     
-    _, modes_anal = n_w(10)
+    _, modes_anal = n_w(4,nb_approx)
     
     modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
     
@@ -289,7 +289,7 @@ def MAC(n):
             mode_anal = modes_anal[:, j]
             mode_anal /= mode_anal[0]
 
-            shape_anal = y(x, mode_anal, 10)
+            shape_anal = y(x, mode_anal, 4)
             if j==0:
                 print("anal :", shape_anal)
         
@@ -309,36 +309,45 @@ def MAC(n):
     
             macij = num[0][0] / (denom1[0][0] * denom2[0][0])
     
-            M[i][j] = macij
+            M[3-i][j] = macij
     
-    fig, _ = plt.subplots(figsize=(8, 6))
-    ax = sns.heatmap(M, annot=True, linewidth=.5, cmap="YlGnBu", vmin=0, vmax=1, cbar_kws={'label': 'Valeurs matrice MAC'})
-    ax.set(xlabel="Fréquences théoriques [Hz]", ylabel="Fréquences expérimentales [Hz]")
+    fig, ax = plt.subplots(figsize=(8, 6))
+    plt.imshow(M, cmap='Blues', interpolation='nearest', vmin=0, vmax=1)
+    plt.colorbar(label='Valeurs matrice MAC')
     
-
+    # Ajouter des annotations manuellement
+    for i in range(n):
+        for j in range(n):
+            plt.text(j, i, f'{M[i, j]:.2f}', ha='center', va='center', color='black')
+    
+    plt.xlabel("Fréquences théoriques [Hz]")
+    plt.ylabel("Fréquences expérimentales [Hz]")
+    
     xlabels = ['38.02', '271.0', '729.2', '1493.61']
-    ax.set_xticklabels(xlabels, rotation='horizontal')
+    plt.xticks(ticks=np.arange(n), labels=xlabels, rotation='horizontal')
     
     ylabels = ['451.46', '243.85', '66.98', '3.71']
-    ax.set_yticklabels(ylabels, rotation='horizontal')
+    plt.yticks(ticks=np.arange(n), labels=ylabels, rotation='horizontal')
     
     plt.savefig('8-MAC.pdf')
     plt.show()
-        
+
     return M
+
+nb_approx_test = 14
 
 
 #computing n natural fréquencies with Rayleigh Ritz
-w_test, modes_test = n_w(10)
+w_test, modes_test = n_w(4,nb_approx_test)
 print("Fréquences propres (Hz) :", w_test)
 print("Modes propres :", modes_test)
-errors = relative_errors()
+errors = relative_errors(nb_approx_test)
 print("Erreurs relatives (%) :", errors)
-"""
+
 for i in range(4):
-    mode_shapes(i)
-"""
-MAC(4) 
+    mode_shapes(i, nb_approx_test)
+
+MAC(4, nb_approx_test) 
 
 
 """
