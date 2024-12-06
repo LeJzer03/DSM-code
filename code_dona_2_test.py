@@ -12,7 +12,7 @@ from scipy.linalg import eigh
 from scipy.linalg import eig
 import sympy 
 import seaborn as sns
-
+#test
 L = 1.2  # Longueur du cadre [m]
 E = 2.1e11  # Module d'Young [Pa]
 I = 1.83866 * 10**-5  # Moment quadratique [m^4]
