@@ -12,17 +12,18 @@ from scipy.linalg import eigh
 from scipy.linalg import eig
 import sympy 
 import seaborn as sns
+from sympy import symbols, integrate
 #test
 L = 1.2  # Longueur du cadre [m]
 E = 2.1e11  # Module d'Young [Pa]
 I = 1.83866 * 10**-5  # Moment quadratique [m^4]
 rho = 7850  # Densité du matériau [kg/m^3]
-A = 0.15*0.15 - (0.15-0.01)**2 #0.0225  # Section transversale [m^2]
+A = 0.15*0.15 - (0.15-0.02)**2 #0.0225  # Section transversale [m^2]
 
 
-mB = 75.02  # Masse à la position B [kg]
+mB = 75.2  # Masse à la position B [kg]
 xB = 0.4  # Position de la masse B sur x [m]
-jB = 1  # Moment d'inertie de la masse B [kg*m^2]
+#jB = 1  # Moment d'inertie de la masse B [kg*m^2]
 lB = 0.25  # Position de la masse B sur y [m]
 jb = 1 + mB * lB**2  # Moment d'inertie de la masse B avec le th du transport[kg*m^2]
 
@@ -41,6 +42,7 @@ x2 = 0.8  # Position des ressort 2 sur x [m]
 
 
 x = sympy.symbols("x")
+#x, L = symbols('x L')
 
 
 #functions for Rayleigh-Ritz (wi)
@@ -50,6 +52,7 @@ def phi(x, L, n):
     else:
         return (x/L)**n
 
+"""
 #derivatives of wi
 def phi_deriv(x, L, n):
     if n == 0:
@@ -58,6 +61,12 @@ def phi_deriv(x, L, n):
         return 1/L
     else:
         return (n/L) * (x/L)**(n-1)
+"""
+def phi_deriv(x, L, n):
+    x_sym = sympy.symbols("x")
+    phi_expr = phi(x_sym, L, n)
+    phi_deriv_expr = sympy.diff(phi_expr, x_sym)
+    return phi_deriv_expr.subs(x_sym, x)
 
 #matrix of stiffness
 def stiff(N) : 
@@ -111,18 +120,39 @@ def stiff(N) :
             # Calcul de la matrice de raideur totale
             K[i][j] = k_frame + k_k1l + k_k2l + k_k1r + k_k2r
             
+
+    #print("matrice de raideur :", K)
+            
     return K
+
+"""
+def T_max(w):
+    M = np.zeros((len(w),len(w)))
+    for i in range (len(w)):
+        for j in range(len(w)):
+            M[i][j] = m * integrate(w[i]*w[j], (x, 0, l))
+                    + M_mot * w[i].subs(x,2*a).evalf() * w[j].subs(x,2*a).evalf()
+                    + M_dv * w[i].subs(x,L+a).evalf() * w[j].subs(x,L+a).evalf()
+                    + (J_B + M_mot*h**2) * w[i].diff(x).subs(x,2*a).evalf() * w[j].diff(x).subs(x,2*a).evalf()
+                    + J_D * w[i].diff(x).subs(x,L+a).evalf() * w[j].diff(x).subs(x,L+a).evalf()
+            
+    return M
+
+"""
+
+
+
 
 #matrix of mass
 def mass(N) :
     """
-    Constructs the mass matrix M for N degrees of freedom using symbolic integration.
+    #Constructs the mass matrix M for N degrees of freedom using symbolic integration.
 
-    Parameters:
-    - N: The number of degrees of freedom.
+    #Parameters:
+    #- N: The number of degrees of freedom.
     
-    Returns:
-    - M: The mass matrix of size NxN.
+    #Returns:
+    #- M: The mass matrix of size NxN.
     """
 
     M = np.zeros([N, N])
@@ -148,12 +178,15 @@ def mass(N) :
             dfi_Dv = phi_deriv(xDv, L, i)
             dfj_Dv = phi_deriv(xDv, L, j)
 
-            m_J_B = jB * dfi_B * dfj_B
+            m_J_B = jb * dfi_B * dfj_B
             m_J_Dv = jDv * dfi_Dv * dfj_Dv
             
             M[i][j] = m_frame + m_M_B + m_M_Dv + m_J_B + m_J_Dv
+
+    #print("matrice de masse :", M)
     
     return M
+
 
 #computing n natural fréquencies with Rayleigh Ritz
 def n_w(n, nb_approx):
@@ -240,9 +273,9 @@ def relative_errors(nb_approx):
     Returns:
     - errors: An array of relative errors (in percentage) for the first 4 frequencies.
     """
-    w_anal, _ = n_w(4, nb_approx)
-    print(w_anal)
+    w_anal, _ = n_w(14, nb_approx)
     w_num = np.loadtxt('P2024_f_Part4.txt')
+    print("w_num:", w_num)
     errors = np.zeros(4)
     for i in range(4):
         errors[i] = (np.abs(w_anal[i] - w_num[i]) / w_num[i]) * 100
@@ -262,6 +295,7 @@ def y(x, mode, n):
     - f : array, calculated deflection at each position x.
     """
     x = np.array(x)  # Ensure x is a numpy array for element-wise operations
+    x = np.sort(x)
     f = 0
     for i in range(n):
         f += (x / L)**i * mode[i]
@@ -269,24 +303,32 @@ def y(x, mode, n):
         
 #computing theoritical and numerical modes with m being the number of the mode (beginning with 0)
 def mode_shapes(m, nb_approx):
-    _, modes_anal = n_w(4,nb_approx)
-    
-    modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
+    print("m:", m)  
+    _, modes_anal = n_w(14,nb_approx)
+    modes_num = np.loadtxt('P2024_Modes_Part4.txt') * 0.001
+
+    print("Shape of mode_anal:", modes_anal.shape)
     
     x = np.linspace(0, 1.2, 1000)
 
     x_point = [0, 100, 200, 300, 400, 400, 500, 600, 700, 800, 901, 1000, 1101, 1200]
     x_point = [x / 1000 for x in x_point] # Convertir en mètres
     
+
     mode_anal = modes_anal[:, m]
     mode_num = modes_num[:, m]
-    
+    print("mode dans mode_shapes\n")
+    print("mode_anal avant norm.:", mode_anal)
+    print("mode_num avant norm.:", mode_num)
+
     #normalization because modes are defined up to a constant so to have the same ones : putting q0 at 1
     mode_anal /= mode_anal[0]
     mode_num /= mode_num[0]
+    print("mode_anal après norm.:", mode_anal)
+    print("mode_num après norm.:", mode_num)
     
     
-    f = y(x, mode_anal,4)
+    f = y(x, mode_anal,14)
     
     fig,ax = plt.subplots()
     plt.grid(True,linestyle='--',color='0.80')
@@ -303,7 +345,7 @@ def mode_shapes(m, nb_approx):
 def MAC(n, nb_approx):
     M = np.zeros([n,n])
     
-    _, modes_anal = n_w(4,nb_approx)
+    _, modes_anal = n_w(14,nb_approx)
     
     modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
     
@@ -314,8 +356,7 @@ def MAC(n, nb_approx):
     for i in range(n):
         shape_num = modes_num[:,i]
         shape_num /= shape_num[0]
-        if i ==0:
-            print("data:", shape_num)
+
         
         #mode into matrix
         vec_num = np.zeros([len(shape_num), 1])
@@ -329,10 +370,8 @@ def MAC(n, nb_approx):
             mode_anal = modes_anal[:, j]
             mode_anal /= mode_anal[0]
 
-            shape_anal = y(x, mode_anal, 4)
-            if j==0:
-                print("anal :", shape_anal)
-        
+            shape_anal = y(x, mode_anal, 14)
+
         
             #mode into matrix
             vec_anal = np.zeros([len(shape_anal), 1])
@@ -375,18 +414,21 @@ def MAC(n, nb_approx):
     return M
 
 nb_approx_test = 14
-n = 14
+
+modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
 
 
 #computing n natural fréquencies with Rayleigh Ritz
-w_test, modes_test = n_w(4,nb_approx_test)
+w_test, modes_test = n_w(14,nb_approx_test)
 print("Fréquences propres (Hz) :", w_test)
-print("Modes propres :", modes_test)
+#print("Modes propres :", modes_test)
 errors = relative_errors(nb_approx_test)
 print("Erreurs relatives (%) :", errors)
 
 for i in range(4):
     mode_shapes(i, nb_approx_test)
+
+convergence()
 
 MAC(4, nb_approx_test) 
 
