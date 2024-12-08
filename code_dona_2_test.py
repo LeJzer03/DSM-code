@@ -219,7 +219,7 @@ def convergence():
     w3 = np.zeros(13)
     w4 = np.zeros(13)
     w5 = np.zeros(13)
-    w6 = np.zeros(13)
+
     for n in range(1,14):
         K = stiff(n)
         M = mass(n)
@@ -241,24 +241,41 @@ def convergence():
         if len(w) > 4 :
             w5[n-1] = w[4]
         
-        if len(w) > 5 :
-            w6[n-1] = w[5]
-    
+
     x = np.arange(1, 14, 1)
     
     
-    fig,ax = plt.subplots()
-    plt.grid(True,linestyle='--',color='0.80')
-    plt.plot(x, w1, color = 'red', label = 'f1')
-    plt.plot(x[1:], w2[1:], color = 'orange', label = 'f2')
-    plt.plot(x[2:], w3[2:], color = 'yellow', label = 'f3')
-    plt.plot(x[3:], w4[3:], color = 'limegreen', label = 'f4')
-    plt.plot(x[4:], w5[4:], color = 'blue', label = 'f5')
-    plt.plot(x[5:], w6[5:], color = 'darkmagenta', label = 'f6')
-    plt.legend(loc = 'upper right', ncol = 2)
-    plt.ylim(-100, 10000)
+    fig, ax = plt.subplots()
+    plt.grid(True, linestyle='--', color='0.80')
+    
+    # Ajout des courbes
+    plt.plot(x, w1, color='red', label='f1')
+    plt.plot(x[1:], w2[1:], color='orange', label='f2')
+    plt.plot(x[2:], w3[2:], color='yellow', label='f3')
+    plt.plot(x[3:], w4[3:], color='limegreen', label='f4')
+    
+    # Ajout de la ligne verticale violette en pointillé
+    ax.axvline(x=10, color='purple', linestyle='--', label='Ordre de convergence choisi')
+
+    # Ajout des légendes
+    #plt.legend(loc='upper right', ncol=2)
+    plt.legend(loc='upper right')
+
+    # Limites de l'axe y
+    plt.ylim(-100, 5000)
+
+    # Étiquettes des axes
     plt.xlabel('Ordre de convergence')
     plt.ylabel('Fréquences propres [Hz]')
+
+    # Ajout des graduations mineures
+    ax.minorticks_on()
+
+    # Ajout de la grille pour les graduations principales et mineures
+    ax.grid(which='both', linestyle='--', linewidth='0.5', color='gray')
+    ax.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
+
+    # Sauvegarde et affichage du graphique
     plt.savefig('1-convergence.pdf')
     plt.show()
         
@@ -273,7 +290,7 @@ def relative_errors(nb_approx):
     Returns:
     - errors: An array of relative errors (in percentage) for the first 4 frequencies.
     """
-    w_anal, _ = n_w(14, nb_approx)
+    w_anal, _ = n_w(10, nb_approx)
     w_num = np.loadtxt('P2024_f_Part4.txt')
     print("w_num:", w_num)
     errors = np.zeros(4)
@@ -304,10 +321,10 @@ def y(x, mode, n):
 #computing theoritical and numerical modes with m being the number of the mode (beginning with 0)
 def mode_shapes(m, nb_approx):
     print("m:", m)  
-    _, modes_anal = n_w(14,nb_approx)
+    _, modes_anal = n_w(10,nb_approx)
     modes_num = np.loadtxt('P2024_Modes_Part4.txt') * 0.001
 
-    print("Shape of mode_anal:", modes_anal.shape)
+    #print("Shape of mode_anal:", modes_anal.shape)
     
     x = np.linspace(0, 1.2, 1000)
 
@@ -317,26 +334,41 @@ def mode_shapes(m, nb_approx):
 
     mode_anal = modes_anal[:, m]
     mode_num = modes_num[:, m]
-    print("mode dans mode_shapes\n")
-    print("mode_anal avant norm.:", mode_anal)
-    print("mode_num avant norm.:", mode_num)
+    #print("mode dans mode_shapes\n")
+    #print("mode_anal avant norm.:", mode_anal)
+    #print("mode_num avant norm.:", mode_num)
 
     #normalization because modes are defined up to a constant so to have the same ones : putting q0 at 1
     mode_anal /= mode_anal[0]
     mode_num /= mode_num[0]
-    print("mode_anal après norm.:", mode_anal)
-    print("mode_num après norm.:", mode_num)
+    #print("mode_anal après norm.:", mode_anal)
+    #print("mode_num après norm.:", mode_num)
     
     
-    f = y(x, mode_anal,14)
+    f = y(x, mode_anal,10)
     
-    fig,ax = plt.subplots()
-    plt.grid(True,linestyle='--',color='0.80')
-    plt.scatter(x_point, mode_num, color = 'orange', label = 'Mode expérimental')
-    plt.plot(x, f, color = 'blue', label = 'Mode théorique')
+    fig, ax = plt.subplots()
+    plt.grid(True, linestyle='--', color='0.80')
+    
+    # Ajout des points et des courbes
+    plt.scatter(x_point, mode_num, color='orange', label='Mode expérimental')
+    plt.plot(x, f, color='blue', label='Mode théorique (Rayleigh-Ritz)')
+    
+    # Ajout des légendes
     plt.legend()
+    
+    # Étiquettes des axes
     plt.xlabel('x [m]')
-    plt.ylabel('Délfection z(x) [m]')
+    plt.ylabel('Déflection z(x) [m]')
+    
+    # Ajout des graduations mineures
+    ax.minorticks_on()
+    
+    # Ajout de la grille pour les graduations principales et mineures
+    ax.grid(which='both', linestyle='--', linewidth='0.5', color='gray')
+    ax.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
+    
+    # Sauvegarde et affichage du graphique
     plt.savefig('7-mode6.pdf')
     plt.show()
     
@@ -345,39 +377,42 @@ def mode_shapes(m, nb_approx):
 def MAC(n, nb_approx):
     M = np.zeros([n,n])
     
-    _, modes_anal = n_w(14,nb_approx)
+    freq_th, modes_anal = n_w(10, nb_approx)
+    freq_exp = np.loadtxt('P2024_f_Part4.txt')
     
-    modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
+    modes_num = np.loadtxt('P2024_Modes_Part4.txt') * 0.001
     
     x_point = [0, 100, 200, 300, 400, 400, 500, 600, 700, 800, 901, 1000, 1101, 1200]
-    x = [x_calc / 1000 for x_calc in x_point] # Convertir en mètres
-
-    #i = experimental modes
+    x = [x_calc / 1000 for x_calc in x_point]  # Convertir en mètres
+    
+    # Initialiser la matrice M
+    n = len(freq_exp)
+    M = np.zeros((n, n))
+    
+    # i = experimental modes
     for i in range(n):
-        shape_num = modes_num[:,i]
+        shape_num = modes_num[:, i]
         shape_num /= shape_num[0]
-
-        
-        #mode into matrix
+    
+        # mode into matrix
         vec_num = np.zeros([len(shape_num), 1])
         for k in range(len(shape_num)):
             vec_num[k][0] = shape_num[k]
-        
+    
         vec_numT = vec_num.T
-        
-        #j = theoritical modes
-        for j in range(n) :
+    
+        # j = theoritical modes
+        for j in range(n):
             mode_anal = modes_anal[:, j]
             mode_anal /= mode_anal[0]
-
-            shape_anal = y(x, mode_anal, 14)
-
-        
-            #mode into matrix
+    
+            shape_anal = y(x, mode_anal, 10)
+    
+            # mode into matrix
             vec_anal = np.zeros([len(shape_anal), 1])
             for k in range(len(shape_anal)):
                 vec_anal[k][0] = shape_anal[k]
-        
+    
             vec_analT = vec_anal.T
     
             num = np.abs(np.dot(vec_numT, vec_anal))
@@ -388,7 +423,7 @@ def MAC(n, nb_approx):
     
             macij = num[0][0] / (denom1[0][0] * denom2[0][0])
     
-            M[3-i][j] = macij
+            M[3 - i][j] = macij
     
     fig, ax = plt.subplots(figsize=(8, 6))
     plt.imshow(M, cmap='Blues', interpolation='nearest', vmin=0, vmax=1)
@@ -399,27 +434,27 @@ def MAC(n, nb_approx):
         for j in range(n):
             plt.text(j, i, f'{M[i, j]:.2f}', ha='center', va='center', color='black')
     
-    plt.xlabel("Fréquences théoriques [Hz]")
+    plt.xlabel("Fréquences théoriques (Rayleigh-Ritz) [Hz]")
     plt.ylabel("Fréquences expérimentales [Hz]")
-    
-    xlabels = ['38.02', '271.0', '729.2', '1493.61']
-    plt.xticks(ticks=np.arange(n), labels=xlabels, rotation='horizontal')
-    
-    ylabels = ['451.46', '243.85', '66.98', '3.71']
-    plt.yticks(ticks=np.arange(n), labels=ylabels, rotation='horizontal')
+
+    freq_th = [3.70510008e+00, 6.74786637e+01, 2.49959966e+02, 5.92337108e+02]
+    freq_exp = [451.46, 243.85, 66.98, 3.71]
+    # Utiliser les 4 premières fréquences théoriques et expérimentales pour les étiquettes des axes
+    plt.xticks(ticks=np.arange(4), labels=[f'{freq:.2f}' for freq in freq_th], rotation='horizontal')
+    plt.yticks(ticks=np.arange(4), labels=[f'{freq:.2f}' for freq in freq_exp], rotation='horizontal')
     
     plt.savefig('8-MAC.pdf')
     plt.show()
-
+    
     return M
 
-nb_approx_test = 14
+nb_approx_test = 10
 
 modes_num = np.loadtxt('P2024_Modes_Part4.txt')*0.001
 
 
 #computing n natural fréquencies with Rayleigh Ritz
-w_test, modes_test = n_w(14,nb_approx_test)
+w_test, modes_test = n_w(10,nb_approx_test)
 print("Fréquences propres (Hz) :", w_test)
 #print("Modes propres :", modes_test)
 errors = relative_errors(nb_approx_test)
