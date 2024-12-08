@@ -4,7 +4,7 @@ Created on Thu Dec 14 17:37:16 2023
 
 @author: sdona
 """
-
+import os
 import numpy as np 
 import scipy
 from matplotlib import pyplot as plt 
@@ -13,7 +13,11 @@ from scipy.linalg import eig
 import sympy 
 import seaborn as sns
 from sympy import symbols, integrate
-#test
+
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 L = 1.2  # Longueur du cadre [m]
 E = 2.1e11  # Module d'Young [Pa]
 I = 1.83866 * 10**-5  # Moment quadratique [m^4]
@@ -368,8 +372,9 @@ def mode_shapes(m, nb_approx):
     ax.grid(which='both', linestyle='--', linewidth='0.5', color='gray')
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
     
-    # Sauvegarde et affichage du graphique
-    plt.savefig('7-mode6.pdf')
+    # Sauvegarde et affichage du graphique avec un nom de fichier basé sur le mode
+    filename = f'mode_{m + 1}.pdf'
+    plt.savefig(filename)
     plt.show()
     
  
