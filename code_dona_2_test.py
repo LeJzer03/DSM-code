@@ -354,9 +354,9 @@ def mode_shapes(m, nb_approx):
     fig, ax = plt.subplots()
     plt.grid(True, linestyle='--', color='0.80')
     
-    # Ajout des points et des courbes
-    plt.scatter(x_point, mode_num, color='orange', label='Mode expérimental')
+    
     plt.plot(x, f, color='blue', label='Mode théorique (Rayleigh-Ritz)')
+    
     
     # Ajout des légendes
     plt.legend()
